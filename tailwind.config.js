@@ -8,6 +8,7 @@ export default {
         extend: {
             colors: {
                 primary: "#E06EAC",
+                asd: "#E02EAS"
             },
             fontFamily: {
                 'product': ['ProductSans', 'sans-serif'],
