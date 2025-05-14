@@ -1,9 +1,7 @@
 // /api/process_payment.js
 import mercadopago from 'mercadopago';
 
-mercadopago.configure({
-    access_token: 'TEST-6554051931792691-051417-c5fd72e5011d10e73eef50933021d032-732478849',
-});
+mercadopago.configurations.setAccessToken('TEST-6554051931792691-051417-c5fd72e5011d10e73eef50933021d032-732478849');
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -11,9 +9,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        const paymentData = req.body;
-
-        const payment = await mercadopago.payment.create(paymentData);
+        const payment = await mercadopago.payment.create(req.body);
         return res.status(200).json(payment.body);
     } catch (err) {
         console.error('[process_payment] Error:', err);
