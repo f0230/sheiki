@@ -1,75 +1,40 @@
+import express from 'express';
+import cors from 'cors';
+import { mercadopago } from 'mercadopago';
 
-import { loadMercadoPago } from "@mercadopago/sdk-js";
-
-await loadMercadoPago();
-const mp = new window.MercadoPago("TEST-e6e6f120-4164-4363-8777-34b204c147ab");
-
-// Importar dependencias
-const express = require('express');
-const cors = require('cors');
-const mercadopago = require('mercadopago');  // SDK de MercadoPago
-
-// Inicializar express
 const app = express();
 const port = 5000;
 
-// Middleware
-app.use(cors());  // Permitir solicitudes CORS
-app.use(express.json());  // Parsear cuerpo de las solicitudes en formato JSON
+app.use(cors());
+app.use(express.json());
 
-// Configurar MercadoPago con tu access token
-mercadopago.configurations.setAccessToken('TEST-e6e6f120-4164-4363-8777-34b204c147ab');  // Usa tu access token de prueba
+// Configura Mercado Pago
+mercadopago.configurations.setAccessToken('TEST-3163063679169777-051318-9609ee83ed38775754d91789d583ea1f-732478849'); // Reemplaza con tu token
 
-// Endpoint para crear la preferencia de pago
-app.post('/create-payment', (req, res) => {
+// Endpoint para crear la preferencia
+app.post('/api/create-preference', (req, res) => {
+  const { items } = req.body;
+
   const preference = {
-    items: req.body.items.map(item => ({
+    items: items.map(item => ({
       title: item.nombre,
-      unit_price: item.precio,  // Precio por unidad
+      unit_price: item.precio,
       quantity: item.quantity,
     })),
     back_urls: {
-      success: 'http://localhost:3000/success',   // URL de éxito
-      failure: 'http://localhost:3000/failure',   // URL de fracaso
-      pending: 'http://localhost:3000/pending',   // URL si el pago está pendiente
+      success: 'http://localhost:3000/success',  // Redirige a la página de éxito de tu app
+      failure: 'http://localhost:3000/failure',  // Redirige a la página de fallo de tu app
+      pending: 'http://localhost:3000/pending',  // Redirige a la página de pago pendiente
     },
-    auto_return: 'approved',   // Redirige automáticamente cuando el pago es aprobado
-    payment_methods: {
-      excluded_payment_types: [
-        {
-          id: "ticket" // Si no quieres aceptar pagos por ticket
-        }
-      ],
-    },
+
+    auto_return: 'approved',
   };
 
-  // Crear la preferencia de pago con MercadoPago
   mercadopago.preferences.create(preference)
-    .then(function (response) {
-      res.json({ id: response.body.id });  // Enviar el ID de la preferencia de pago al frontend
-    })
-    .catch(function (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Error al crear la preferencia de pago' });
-    });
+    .then(response => res.json({ preference: response.body }))
+    .catch(error => res.status(500).json({ error: error.message }));
 });
 
-// Endpoint para procesar el pago
-app.post('/process_payment', (req, res) => {
-  const paymentData = req.body;
-
-  // Crear el pago
-  mercadopago.payment.create(paymentData)
-    .then(function (response) {
-      res.json(response.body);  // Enviar la respuesta con el estado del pago
-    })
-    .catch(function (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Error al procesar el pago' });
-    });
-});
-
-// Iniciar el servidor en el puerto 5000
 app.listen(port, () => {
-  console.log(`Servidor de backend corriendo en http://localhost:${port}`);
+  console.log(`Backend corriendo en http://localhost:${port}`);
 });
