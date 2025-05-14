@@ -1,6 +1,9 @@
 /home/fran/Documents/sheiki
 ├── index.html
 ├── README.md
+├── api
+│   ├── create-preference.js
+│   └── process_payment.js
 ├── src
 │   ├── assets
 │   │   ├── fonts
@@ -32,7 +35,9 @@
 │   │   └── Chekout.jsx
 │   └── store
 │       └── useCart.js
+│       └── visualCart.js
 ├── tailwind.config.js
-├── tree.txt
 └── vite.config.js
+└── vercel.config.js
+
 

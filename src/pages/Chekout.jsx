@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useCart } from '../store/useCart';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { Link } from 'react-router-dom';
 
 const CheckoutPage = () => {
     const { items, clearCart } = useCart();

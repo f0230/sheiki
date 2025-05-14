@@ -1,7 +1,8 @@
 const mercadopago = require('mercadopago');
 
+// Token desde variable de entorno
 mercadopago.configure({
-    access_token: 'TEST-6554051931792691-051417-c5fd72e5011d10e73eef50933021d032-732478849',
+    access_token: process.env.MP_ACCESS_TOKEN,
 });
 
 module.exports = async (req, res) => {
