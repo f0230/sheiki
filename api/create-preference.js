@@ -1,14 +1,15 @@
-export default async function handler(req, res) {
+const mercadopago = require('mercadopago');
+
+mercadopago.configure({
+    access_token: 'TEST-6554051931792691-051417-c5fd72e5011d10e73eef50933021d032-732478849',
+});
+
+module.exports = async (req, res) => {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
     try {
-        const mercadopago = await import('mercadopago');
-        mercadopago.default.configure({
-            access_token: 'TEST-6554051931792691-051417-c5fd72e5011d10e73eef50933021d032-732478849',
-        });
-
         const { items } = req.body;
 
         if (!Array.isArray(items) || items.length === 0) {
@@ -29,10 +30,10 @@ export default async function handler(req, res) {
             auto_return: 'approved',
         };
 
-        const response = await mercadopago.default.preferences.create(preference);
+        const response = await mercadopago.preferences.create(preference);
         return res.status(200).json({ preference: response.body });
     } catch (err) {
         console.error('[create-preference] Error:', err);
         return res.status(500).json({ error: err.message });
     }
-}
+};
