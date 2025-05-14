@@ -1,18 +1,23 @@
-// src/main.jsx
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { AuthProvider } from './context/AuthContext';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './index.css';
+import { initMercadoPago } from '@mercadopago/sdk-react';  // Importa la función de inicialización
 
-
-
+// Inicializa Mercado Pago con tu public key
+useEffect(() => {
+  initMercadoPago('TEST-e6e6f120-4164-4363-8777-34b204c147ab'); // Reemplaza con tu clave pública de Mercado Pago
+}, []);
 
 // Lazy load para mejor rendimiento
 const Home = lazy(() => import('./pages/Home.jsx'));
 const ProductPage = lazy(() => import('./pages/ProductPage.jsx'));
 const CartPage = lazy(() => import('./pages/CartPage.jsx'));
 const Checkout = lazy(() => import('./pages/Chekout.jsx'));
+const SuccessPage = lazy(() => import('./pages/SuccessPage.jsx'));
+const FailurePage = lazy(() => import('./pages/FailurePage.jsx'));
+const PendingPage = lazy(() => import('./pages/PendingPage.jsx'));
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -23,8 +28,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="/" element={<Home />} />
             <Route path="/producto" element={<ProductPage />} />
             <Route path="/carrito" element={<CartPage />} />
-            <Route path="/pago" element={<Checkout/>} />
-
+            <Route path="/pago" element={<Checkout />} />
+            <Route path="/success" element={<SuccessPage />} />
+            <Route path="/failure" element={<FailurePage />} />
+            <Route path="/pending" element={<PendingPage />} />
           </Routes>
         </Suspense>
       </Router>

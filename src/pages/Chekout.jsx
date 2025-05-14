@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCart } from '../store/useCart';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { CheckoutButton } from '@mercadopago/sdk-react';  // Importamos el botón de pago
 import { Link } from 'react-router-dom';
 
 const CheckoutPage = () => {
-    const { items } = useCart();
+    const { items, clearCart } = useCart();
     const [userInfo, setUserInfo] = useState({
         nombre: '',
         correo: '',
@@ -13,6 +14,7 @@ const CheckoutPage = () => {
     });
     const [paymentMethod, setPaymentMethod] = useState('credit_card');
     const [isProcessing, setIsProcessing] = useState(false);
+    const [preference, setPreference] = useState(null); // Almacenamos la preferencia de pago
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -26,17 +28,37 @@ const CheckoutPage = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
         setIsProcessing(true);
-
-        // Simular el proceso de pago
         setTimeout(() => {
             alert('¡Compra exitosa!');
             setIsProcessing(false);
+            clearCart(); // Vaciar el carrito después de la compra
         }, 2000);
     };
 
+    // Calcular el total del carrito
     const calculateTotal = () => {
         return items.reduce((total, item) => total + item.precio * item.quantity, 0);
     };
+
+    // Crear la preferencia de pago en el backend
+    useEffect(() => {
+        const fetchPreference = async () => {
+            const response = await fetch('/api/create-preference', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ items: items }), // Pasa los productos del carrito
+            });
+
+            const data = await response.json();
+            setPreference(data.preference); // Guardamos la preferencia de pago
+        };
+
+        if (items.length > 0) {
+            fetchPreference();
+        }
+    }, [items]);
 
     return (
         <div className="bg-[#D65FA5] text-white font-product min-h-screen">
@@ -65,37 +87,6 @@ const CheckoutPage = () => {
                                 </div>
                             </div>
 
-                            {/* Formulario de Datos del Usuario */}
-                            <div className="bg-white text-black p-6 rounded-lg">
-                                <h2 className="text-2xl font-semibold mb-4">Datos de envío</h2>
-                                <form onSubmit={handleSubmit}>
-                                    <input
-                                        type="text"
-                                        name="nombre"
-                                        placeholder="Nombre completo"
-                                        value={userInfo.nombre}
-                                        onChange={handleInputChange}
-                                        className="w-full p-3 mb-4 border rounded"
-                                    />
-                                    <input
-                                        type="email"
-                                        name="correo"
-                                        placeholder="Correo electrónico"
-                                        value={userInfo.correo}
-                                        onChange={handleInputChange}
-                                        className="w-full p-3 mb-4 border rounded"
-                                    />
-                                    <input
-                                        type="text"
-                                        name="direccion"
-                                        placeholder="Dirección de envío"
-                                        value={userInfo.direccion}
-                                        onChange={handleInputChange}
-                                        className="w-full p-3 mb-4 border rounded"
-                                    />
-                                </form>
-                            </div>
-
                             {/* Método de Pago */}
                             <div className="bg-white text-black p-6 rounded-lg">
                                 <h2 className="text-2xl font-semibold mb-4">Método de pago</h2>
@@ -112,16 +103,17 @@ const CheckoutPage = () => {
                                 </div>
                             </div>
 
-                            {/* Botón de Confirmación */}
-                            <div className="flex justify-between items-center mt-6">
-                                <button
-                                    type="submit"
-                                    onClick={handleSubmit}
-                                    disabled={isProcessing}
-                                    className="bg-black text-white py-3 px-6 rounded-full text-lg hover:bg-gray-900 transition"
-                                >
-                                    {isProcessing ? 'Procesando...' : 'Confirmar Compra'}
-                                </button>
+                            {/* Mercado Pago Button (Checkout) */}
+                            <div className="bg-white text-black p-6 rounded-lg mt-8">
+                                {preference && (
+                                    <CheckoutButton
+                                        preference={preference} // Pasamos la preferencia obtenida
+                                        label="Pagar con Mercado Pago"
+                                        onPaymentSuccess={() => {
+                                            clearCart(); // Vacía el carrito después de un pago exitoso
+                                        }}
+                                    />
+                                )}
                             </div>
                         </div>
                     </>

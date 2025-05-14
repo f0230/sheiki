@@ -29,6 +29,7 @@
 │   │   ├── CartPage.jsx
 │   │   ├── Home.jsx
 │   │   └── ProductPage.jsx
+│   │   └── Chekout.jsx
 │   └── store
 │       └── useCart.js
 ├── tailwind.config.js
