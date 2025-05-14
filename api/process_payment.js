@@ -6,12 +6,17 @@ mercadopago.configure({
 });
 
 export default async function handler(req, res) {
-    if (req.method !== 'POST') return res.status(405).end();
+    if (req.method !== 'POST') {
+        return res.status(405).json({ message: 'Method Not Allowed' });
+    }
 
     try {
-        const payment = await mercadopago.payment.create(req.body);
-        res.status(200).json(payment.body);
+        const paymentData = req.body;
+
+        const payment = await mercadopago.payment.create(paymentData);
+        return res.status(200).json(payment.body);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('[process_payment] Error:', err);
+        return res.status(500).json({ error: err.message });
     }
 }
