@@ -1,28 +1,76 @@
-import { CheckoutButton } from '@mercadopago/sdk-react';  // Importa el botón de pago de Mercado Pago
+// src/pages/Chekout.jsx
+import React, { useState, useEffect } from 'react';
+import { useCart } from '../store/useCart';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import { Link } from 'react-router-dom';
 
 const CheckoutPage = () => {
     const { items, clearCart } = useCart();
-    const [preference, setPreference] = useState(null); // Almacenamos la preferencia de pago
+    const [preferenceId, setPreferenceId] = useState(null);
 
-    // Crear la preferencia de pago en el backend
+    const calculateTotal = () =>
+        items.reduce((total, item) => total + item.precio * item.quantity, 0);
+
     useEffect(() => {
         const fetchPreference = async () => {
             const response = await fetch('/api/create-preference', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ items: items }), // Pasamos los productos del carrito
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items }),
             });
 
             const data = await response.json();
-            setPreference(data.preference); // Guardamos la preferencia de pago
+            setPreferenceId(data.preference.id);
         };
 
-        if (items.length > 0) {
-            fetchPreference();
-        }
+        if (items.length > 0) fetchPreference();
     }, [items]);
+
+    useEffect(() => {
+        if (!preferenceId) return;
+
+        const bricksBuilder = window.mercadopago.bricks();
+
+        bricksBuilder.create('payment', 'paymentBrick_container', {
+            initialization: {
+                amount: calculateTotal(),
+                preferenceId,
+            },
+            customization: {
+                paymentMethods: {
+                    ticket: "all",
+                    creditCard: "all",
+                    prepaidCard: "all",
+                    debitCard: "all",
+                    mercadoPago: "all",
+                },
+            },
+            onSubmit: async ({ formData }) => {
+                return new Promise((resolve, reject) => {
+                    fetch('/api/process_payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData),
+                    })
+                        .then(res => res.json())
+                        .then(res => {
+                            clearCart();
+                            resolve();
+                        })
+                        .catch(reject);
+                });
+            },
+            onReady: () => console.log("Brick listo"),
+            onError: (error) => console.error("Error:", error),
+        });
+
+        return () => {
+            if (window.paymentBrickController) {
+                window.paymentBrickController.unmount();
+            }
+        };
+    }, [preferenceId]);
 
     return (
         <div className="bg-[#D65FA5] text-white font-product min-h-screen">
@@ -33,37 +81,23 @@ const CheckoutPage = () => {
                     <p>No hay productos en tu carrito.</p>
                 ) : (
                     <>
-                        <div className="space-y-6">
-                            {/* Resumen del carrito */}
-                            <div className="bg-white text-black p-6 rounded-lg">
-                                <h2 className="text-2xl font-semibold mb-4">Resumen de tu compra</h2>
-                                <ul className="space-y-4">
-                                    {items.map((item, i) => (
-                                        <li key={i} className="flex justify-between">
-                                            <span>{item.nombre} x {item.quantity}</span>
-                                            <span>${item.precio * item.quantity}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                                <div className="mt-4 flex justify-between">
-                                    <span className="font-semibold">Total:</span>
-                                    <span>${calculateTotal()}</span>
-                                </div>
-                            </div>
-
-                            {/* Mercado Pago Button (Checkout) */}
-                            <div className="bg-white text-black p-6 rounded-lg mt-8">
-                                {preference && (
-                                    <CheckoutButton
-                                        preference={preference} // Pasamos la preferencia obtenida
-                                        label="Pagar con Mercado Pago"
-                                        onPaymentSuccess={() => {
-                                            clearCart(); // Vacía el carrito después de un pago exitoso
-                                        }}
-                                    />
-                                )}
+                        <div className="bg-white text-black p-6 rounded-lg">
+                            <h2 className="text-2xl font-semibold mb-4">Resumen de compra</h2>
+                            <ul className="space-y-4">
+                                {items.map((item, i) => (
+                                    <li key={i} className="flex justify-between">
+                                        <span>{item.nombre} x {item.quantity}</span>
+                                        <span>${item.precio * item.quantity}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                            <div className="mt-4 flex justify-between">
+                                <span className="font-semibold">Total:</span>
+                                <span>${calculateTotal()}</span>
                             </div>
                         </div>
+
+                        <div id="paymentBrick_container" className="bg-white text-black p-6 rounded-lg mt-8" />
                     </>
                 )}
             </main>
