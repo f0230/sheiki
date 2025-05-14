@@ -1,4 +1,3 @@
-// src/context/AuthContext.jsx
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
@@ -20,7 +19,11 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const loginWithProvider = async (provider) => {
-        await supabase.auth.signInWithOAuth({ provider });
+        try {
+            await supabase.auth.signInWithOAuth({ provider });
+        } catch (error) {
+            console.error("Error en la autenticación:", error.message);
+        }
     };
 
     const logout = async () => {
