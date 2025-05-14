@@ -1,0 +1,66 @@
+// src/components/MainImage.jsx
+import React, { useEffect, useRef } from 'react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import img3 from '../assets/img3.webp';
+
+gsap.registerPlugin(ScrollTrigger);
+
+const MainImage = () => {
+    const containerRef = useRef(null);
+    const innerRef = useRef(null);
+
+    useEffect(() => {
+        // Animación de entrada scroll
+        gsap.fromTo(
+            containerRef.current,
+            { opacity: 0, y: 100 },
+            {
+                opacity: 1,
+                y: 0,
+                duration: 1.2,
+                ease: 'power3.out',
+                scrollTrigger: {
+                    trigger: containerRef.current,
+                    start: 'top 80%',
+                    toggleActions: 'play none none reverse',
+                },
+            }
+        );
+
+        // Animación hover zoom suave
+        const el = innerRef.current;
+        const zoomIn = () => gsap.to(el, { scale: 1.03, duration: 0.6, ease: 'power2.out' });
+        const zoomOut = () => gsap.to(el, { scale: 1, duration: 0.6, ease: 'power2.out' });
+
+        el.addEventListener('mouseenter', zoomIn);
+        el.addEventListener('mouseleave', zoomOut);
+
+        // Cleanup
+        return () => {
+            el.removeEventListener('mouseenter', zoomIn);
+            el.removeEventListener('mouseleave', zoomOut);
+        };
+    }, []);
+
+    return (
+        <section className="flex justify-center px-4 mt-8">
+            <div
+                ref={containerRef}
+                className="w-full max-w-[1415px] h-[280px] sm:h-[360px] md:h-[420px] lg:h-[508px] rounded-xl shadow-lg overflow-hidden"
+            >
+                <div
+                    ref={innerRef}
+                    className="w-full h-full bg-cover bg-center transition-transform duration-500"
+                    style={{ backgroundImage: `url(${img3})` }}
+                >
+                    <div className="absolute bottom-2 right-4 text-white text-sm sm:text-xs">
+                        video
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+};
+
+export default MainImage;
