@@ -1,6 +1,8 @@
 // src/components/ProductCard.jsx
 import React, { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
+import { Link } from 'react-router-dom'; // Importa Link desde react-router-dom
+
 
 const ProductCard = ({ title, imgSrc }) => {
     const cardRef = useRef(null);
@@ -33,11 +35,13 @@ const ProductCard = ({ title, imgSrc }) => {
                     {title}
                 </h2>
             )}
-            <button
-                className="absolute bottom-6 left-6 w-[140px] md:w-[164px] h-[39px] bg-black text-white text-sm font-product font-bold rounded-full flex items-center justify-center"
-            >
-                Comprar
-            </button>
+            <Link to="/producto">
+                <button
+                    className="absolute bottom-6 left-6 w-[140px] md:w-[164px] h-[39px] bg-black text-white text-sm font-product font-bold rounded-full flex items-center justify-center"
+                >
+                    Comprar
+                </button>
+            </Link>
         </div>
     );
 };
