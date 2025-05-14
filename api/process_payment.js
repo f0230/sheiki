@@ -10,10 +10,10 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const payment = await mercadopago.payment.create(req.body);
-        return res.status(200).json(payment.body);
-    } catch (err) {
-        console.error('[process_payment] Error:', err);
-        return res.status(500).json({ error: err.message });
+        const result = await mercadopago.payment.create(req.body);
+        res.status(200).json(result.body);
+    } catch (error) {
+        console.error('[process_payment] Error:', error);
+        res.status(500).json({ error: error.message });
     }
 };

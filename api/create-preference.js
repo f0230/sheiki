@@ -12,10 +12,6 @@ module.exports = async (req, res) => {
     try {
         const { items } = req.body;
 
-        if (!Array.isArray(items) || items.length === 0) {
-            return res.status(400).json({ message: 'Items inválidos o vacíos' });
-        }
-
         const preference = {
             items: items.map(item => ({
                 title: item.nombre,
@@ -31,9 +27,9 @@ module.exports = async (req, res) => {
         };
 
         const response = await mercadopago.preferences.create(preference);
-        return res.status(200).json({ preference: response.body });
-    } catch (err) {
-        console.error('[create-preference] Error:', err);
-        return res.status(500).json({ error: err.message });
+        res.status(200).json({ preference: response.body });
+    } catch (error) {
+        console.error('[create-preference] Error:', error);
+        res.status(500).json({ error: error.message });
     }
 };
