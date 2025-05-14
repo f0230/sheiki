@@ -1,14 +1,15 @@
-import React, { Suspense, lazy, useEffect } from 'react';
+import React, { Suspense, lazy } from 'react';
 import ReactDOM from 'react-dom/client';
 import { AuthProvider } from './context/AuthContext';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { initMercadoPago } from '@mercadopago/sdk-react'; // Importamos el SDK de Mercado Pago
 import './index.css';
-import { initMercadoPago } from '@mercadopago/sdk-react';  // Importa la función de inicialización
+
 
 // Inicializa Mercado Pago con tu public key
-useEffect(() => {
+
   initMercadoPago('TEST-e6e6f120-4164-4363-8777-34b204c147ab'); // Reemplaza con tu clave pública de Mercado Pago
-}, []);
+
 
 // Lazy load para mejor rendimiento
 const Home = lazy(() => import('./pages/Home.jsx'));
