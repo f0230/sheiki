@@ -6,10 +6,16 @@ mercadopago.configure({
 });
 
 export default async function handler(req, res) {
-    if (req.method !== 'POST') return res.status(405).end();
+    if (req.method !== 'POST') {
+        return res.status(405).json({ message: 'Method not allowed' });
+    }
 
     try {
         const { items } = req.body;
+
+        if (!items || !Array.isArray(items)) {
+            return res.status(400).json({ message: 'Items no válidos' });
+        }
 
         const preference = {
             items: items.map(item => ({
@@ -26,8 +32,9 @@ export default async function handler(req, res) {
         };
 
         const response = await mercadopago.preferences.create(preference);
-        res.status(200).json({ preference: response.body });
+        return res.status(200).json({ preference: response.body });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Error en create-preference:', err);
+        return res.status(500).json({ error: err.message });
     }
 }
