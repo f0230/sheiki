@@ -16,7 +16,7 @@ const CheckoutPage = () => {
     useEffect(() => {
         const fetchPreference = async () => {
             try {
-                console.log("📦 Enviando items:", items);
+                console.log("🛒 Enviando items al backend:", JSON.stringify(items, null, 2));
 
                 const res = await fetch('/api/create-preference', {
                     method: 'POST',
@@ -24,10 +24,18 @@ const CheckoutPage = () => {
                     body: JSON.stringify({ items }),
                 });
 
-                if (!res.ok) throw new Error('Error al crear la preferencia');
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    console.error('❌ Error del backend:', res.status, errorText);
+                    throw new Error(`Error al crear preferencia (${res.status}): ${errorText}`);
+                }
 
                 const data = await res.json();
-                console.log("✅ Preferencia creada:", data);
+                console.log("✅ Preferencia recibida del backend:", data);
+
+                if (!data.preference?.id) {
+                    throw new Error("Respuesta inválida: falta 'preference.id'");
+                }
 
                 setPreferenceId(data.preference.id);
             } catch (err) {
@@ -41,6 +49,7 @@ const CheckoutPage = () => {
         if (items.length > 0) {
             fetchPreference();
         } else {
+            console.warn("🛒 Carrito vacío. No se envía preferencia.");
             setLoading(false);
         }
     }, [items]);
