@@ -8,7 +8,7 @@ import './index.css';
 
 // Inicializa Mercado Pago con tu public key
 
-  initMercadoPago('TEST-e6e6f120-4164-4363-8777-34b204c147ab'); // Reemplaza con tu clave pública de Mercado Pago
+initMercadoPago('APP_USR-e255a7a3-c855-4cac-8ef9-b51094d2701b'); // Reemplaza con tu clave pública de Mercado Pago
 
 
 // Lazy load para mejor rendimiento
