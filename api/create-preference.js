@@ -1,8 +1,9 @@
-// api/create-preference.js
 import mercadopago from 'mercadopago';
 
+const accessToken = process.env.MP_ACCESS_TOKEN;
+
 mercadopago.configure({
-    access_token: process.env.MP_ACCESS_TOKEN,
+    access_token: accessToken,
 });
 
 export default async function handler(req, res) {
@@ -12,6 +13,11 @@ export default async function handler(req, res) {
 
     try {
         const { items } = req.body;
+
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ error: 'Items inválidos o vacíos' });
+        }
+
         const preference = {
             items: items.map(item => ({
                 title: item.nombre,
@@ -27,9 +33,10 @@ export default async function handler(req, res) {
         };
 
         const response = await mercadopago.preferences.create(preference);
-        res.status(200).json({ preference: response.body });
+
+        return res.status(200).json({ preference: response.body });
     } catch (error) {
-        console.error('[create-preference] Error:', error);
-        res.status(500).json({ error: error.message });
+        console.error('[create-preference] Error:', error.message);
+        return res.status(500).json({ error: 'Error al crear preferencia', details: error.message });
     }
 }
