@@ -87,20 +87,29 @@ const CheckoutPage = () => {
 
                         {preferenceId && (
                             <div className="bg-white text-black p-6 rounded-lg mt-8">
-                                <Payment
-                                    initialization={{
-                                        amount: calculateTotal(),
-                                        preferenceId,
-                                    }}
-                                    onSubmit={async (param) => {
-                                        console.log('✅ Pago enviado:', param);
-                                        clearCart();
-                                    }}
-                                    onError={(error) => {
-                                        console.error('❌ Error en Payment Brick:', error);
-                                        setError('Hubo un error al procesar el pago.');
-                                    }}
-                                />
+                                            <Payment
+                                                initialization={{
+                                                    amount: calculateTotal(),
+                                                    preferenceId,
+                                                }}
+                                                customization={{
+                                                    paymentMethods: {
+                                                        ticket: 'all',
+                                                        creditCard: 'all',
+                                                        debitCard: 'all',
+                                                        mercadoPago: 'all',
+                                                    },
+                                                }}
+                                                onSubmit={async (param) => {
+                                                    console.log('✅ Pago enviado:', param);
+                                                    clearCart();
+                                                }}
+                                                onError={(error) => {
+                                                    console.error('❌ Error en Payment Brick:', error);
+                                                    setError('Hubo un error al procesar el pago.');
+                                                }}
+                                            />
+
                             </div>
                         )}
                     </>
