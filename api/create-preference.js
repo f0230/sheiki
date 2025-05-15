@@ -1,4 +1,5 @@
-import { MercadoPagoConfig, Preference } from 'mercadopago';
+import { MercadoPagoConfig } from 'mercadopago';
+import { Preference } from 'mercadopago/dist/clients/preference/create';
 
 const mp = new MercadoPagoConfig({
     accessToken: process.env.MP_ACCESS_TOKEN,
