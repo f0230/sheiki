@@ -1,8 +1,10 @@
-import { MercadoPagoConfig } from 'mercadopago';
+import { MercadoPagoConfig, Preference } from 'mercadopago';
 
-const mercadopago = new MercadoPagoConfig({
+const client = new MercadoPagoConfig({
     accessToken: process.env.MP_ACCESS_TOKEN,
 });
+
+const preferenceClient = new Preference(client);
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -13,14 +15,14 @@ export default async function handler(req, res) {
         const { items } = req.body;
 
         console.log("📥 Items recibidos:", items);
-        console.log("🔐 MP_ACCESS_TOKEN parcial:", process.env.MP_ACCESS_TOKEN?.slice(0, 10));
+        console.log("🔐 Token parcial:", process.env.MP_ACCESS_TOKEN?.slice(0, 10));
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ error: 'Items inválidos o vacíos' });
         }
 
         const preference = {
-            items: items.map(item => ({
+            items: items.map((item) => ({
                 title: item.nombre,
                 unit_price: item.precio,
                 quantity: item.quantity,
@@ -33,8 +35,7 @@ export default async function handler(req, res) {
             auto_return: 'approved',
         };
 
-        // ✅ Usamos el cliente directamente
-        const response = await mercadopago.post('/checkout/preferences', preference);
+        const response = await preferenceClient.create({ body: preference });
 
         return res.status(200).json({ preference: response });
     } catch (error) {
