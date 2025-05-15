@@ -100,15 +100,21 @@ const CheckoutPage = () => {
                                                         mercadoPago: 'all',
                                                     },
                                                 }}
-                                                onSubmit={async (param) => {
-                                                    console.log('✅ Pago enviado:', param);
+                                                onSubmit={async ({ formData }) => {
+                                                    console.log('✅ Pago enviado:', formData);
+
+                                                    // OPCIONAL: limpiar carrito, enviar a backend, etc.
                                                     clearCart();
+
+                                                    // ✅ DEVOLVER true para que Mercado Pago continúe
+                                                    return true;
                                                 }}
                                                 onError={(error) => {
                                                     console.error('❌ Error en Payment Brick:', error);
                                                     setError('Hubo un error al procesar el pago.');
                                                 }}
                                             />
+
 
                             </div>
                         )}
