@@ -1,8 +1,10 @@
-import { MercadoPagoConfig } from 'mercadopago';
+import { MercadoPagoConfig, Preference } from 'mercadopago';
 
-const mercadopago = new MercadoPagoConfig({
+const mp = new MercadoPagoConfig({
     accessToken: process.env.MP_ACCESS_TOKEN,
 });
+
+const preferenceClient = new Preference(mp);
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -32,11 +34,14 @@ export default async function handler(req, res) {
             auto_return: 'approved',
         };
 
-        const result = await mercadopago.preferences.create({ body: preference });
+        const result = await preferenceClient.create({ body: preference });
 
         return res.status(200).json({ preference: result });
     } catch (error) {
         console.error('[create-preference] Error:', error.message, error.stack);
-        return res.status(500).json({ error: 'Error al crear preferencia', details: error.message });
+        return res.status(500).json({
+            error: 'Error al crear preferencia',
+            details: error.message,
+        });
     }
 }
