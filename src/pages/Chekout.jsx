@@ -10,13 +10,14 @@ const CheckoutPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const calculateTotal = () => {
-        return items.reduce((total, item) => total + item.precio * item.quantity, 0);
-    };
+    const calculateTotal = () =>
+        items.reduce((total, item) => total + item.precio * item.quantity, 0);
 
     useEffect(() => {
         const fetchPreference = async () => {
             try {
+                console.log("📦 Enviando items:", items);
+
                 const res = await fetch('/api/create-preference', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -26,11 +27,13 @@ const CheckoutPage = () => {
                 if (!res.ok) throw new Error('Error al crear la preferencia');
 
                 const data = await res.json();
+                console.log("✅ Preferencia creada:", data);
+
                 setPreferenceId(data.preference.id);
-                setLoading(false);
             } catch (err) {
-                console.error('Error creando preferencia:', err);
+                console.error('🚨 Error creando preferencia:', err);
                 setError('No se pudo iniciar el pago. Intenta más tarde.');
+            } finally {
                 setLoading(false);
             }
         };
@@ -81,11 +84,11 @@ const CheckoutPage = () => {
                                         preferenceId,
                                     }}
                                     onSubmit={async (param) => {
-                                        console.log('Formulario enviado:', param);
-                                        clearCart(); // Limpia el carrito al finalizar el pago
+                                        console.log('✅ Pago enviado:', param);
+                                        clearCart();
                                     }}
                                     onError={(error) => {
-                                        console.error('Error en Payment Brick:', error);
+                                        console.error('❌ Error en Payment Brick:', error);
                                         setError('Hubo un error al procesar el pago.');
                                     }}
                                 />

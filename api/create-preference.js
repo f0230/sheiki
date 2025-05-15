@@ -12,6 +12,8 @@ export default async function handler(req, res) {
     try {
         const { items } = req.body;
 
+        console.log("📥 Items recibidos:", items);
+
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ error: 'Items inválidos o vacíos' });
         }
@@ -34,7 +36,7 @@ export default async function handler(req, res) {
 
         return res.status(200).json({ preference: result });
     } catch (error) {
-        console.error('[create-preference] Error:', error);
+        console.error('[create-preference] Error:', error.message, error.stack);
         return res.status(500).json({ error: 'Error al crear preferencia', details: error.message });
     }
 }
