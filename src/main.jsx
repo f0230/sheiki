@@ -13,7 +13,7 @@ initMercadoPago('APP_USR-e255a7a3-c855-4cac-8ef9-b51094d2701b'); // Reemplaza co
 
 // Lazy load para mejor rendimiento
 const Home = lazy(() => import('./pages/Home.jsx'));
-const ProductPage = lazy(() => import('./pages/ProductPage.jsx'));
+const ProductPage = lazy(() => import('./pages/ProductPage.jsx'));  
 const CartPage = lazy(() => import('./pages/CartPage.jsx'));
 const Checkout = lazy(() => import('./pages/Chekout.jsx'));
 const SuccessPage = lazy(() => import('./pages/SuccessPage.jsx'));

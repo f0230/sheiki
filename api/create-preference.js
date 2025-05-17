@@ -28,9 +28,9 @@ export default async function handler(req, res) {
                 quantity: item.quantity,
             })),
             back_urls: {
-                success: 'https://sheiki.vercel.app/success',
-                failure: 'https://sheiki.vercel.app/failure',
-                pending: 'https://sheiki.vercel.app/pending',
+                success: 'https://sheiki.uy/success',
+                failure: 'https://sheiki.uy/failure',
+                pending: 'https://sheiki.uy/pending',
             },
             auto_return: 'approved',
         };
