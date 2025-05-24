@@ -39,6 +39,7 @@ const CheckoutPage = () => {
     const [shippingData, setShippingData] = useState({
         nombre: '',
         telefono: '',
+        email: '',
         departamento: '',
         direccion: '',
         tipoEntrega: '',
@@ -48,6 +49,16 @@ const CheckoutPage = () => {
     const [confirmed, setConfirmed] = useState(false);
 
     const { preferenceId, loading, error } = usePreference(items, shippingData, shippingCost, confirmed);
+
+    const isEmailValid = shippingData.email.includes('@') && shippingData.email.includes('.');
+    const isFormValid = Object.values({
+        nombre: shippingData.nombre,
+        telefono: shippingData.telefono,
+        email: shippingData.email,
+        departamento: shippingData.departamento,
+        direccion: shippingData.direccion,
+        tipoEntrega: shippingData.tipoEntrega
+    }).every(value => value.trim() !== '') && isEmailValid;
 
     useEffect(() => {
         const total = calculateTotal();
@@ -89,42 +100,15 @@ const CheckoutPage = () => {
                         >
                             <h2 className="text-xl font-semibold mb-4">Datos de envío</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <input
-                                    type="text"
-                                    placeholder="Nombre completo"
-                                    value={shippingData.nombre}
-                                    onChange={e => setShippingData({ ...shippingData, nombre: e.target.value })}
-                                    className="border p-2 rounded"
-                                />
-                                <input
-                                    type="tel"
-                                    placeholder="Teléfono"
-                                    value={shippingData.telefono}
-                                    onChange={e => setShippingData({ ...shippingData, telefono: e.target.value })}
-                                    className="border p-2 rounded"
-                                />
-                                <select
-                                    value={shippingData.departamento}
-                                    onChange={e => setShippingData({ ...shippingData, departamento: e.target.value })}
-                                    className="border p-2 rounded"
-                                >
+                                <input type="text" placeholder="Nombre completo" value={shippingData.nombre} onChange={e => setShippingData({ ...shippingData, nombre: e.target.value })} className="border p-2 rounded" />
+                                <input type="email" placeholder="Email" value={shippingData.email} onChange={e => setShippingData({ ...shippingData, email: e.target.value })} className="border p-2 rounded" />
+                                <input type="tel" placeholder="Teléfono" value={shippingData.telefono} onChange={e => setShippingData({ ...shippingData, telefono: e.target.value })} className="border p-2 rounded" />
+                                <select value={shippingData.departamento} onChange={e => setShippingData({ ...shippingData, departamento: e.target.value })} className="border p-2 rounded">
                                     <option value="">Seleccionar departamento</option>
-                                    {departamentosUY.map(dep => (
-                                        <option key={dep} value={dep}>{dep}</option>
-                                    ))}
+                                    {departamentosUY.map(dep => <option key={dep} value={dep}>{dep}</option>)}
                                 </select>
-                                <input
-                                    type="text"
-                                    placeholder="Dirección"
-                                    value={shippingData.direccion}
-                                    onChange={e => setShippingData({ ...shippingData, direccion: e.target.value })}
-                                    className="border p-2 rounded"
-                                />
-                                <select
-                                    value={shippingData.tipoEntrega}
-                                    onChange={e => setShippingData({ ...shippingData, tipoEntrega: e.target.value })}
-                                    className="border p-2 rounded col-span-1 md:col-span-2"
-                                >
+                                <input type="text" placeholder="Dirección" value={shippingData.direccion} onChange={e => setShippingData({ ...shippingData, direccion: e.target.value })} className="border p-2 rounded" />
+                                <select value={shippingData.tipoEntrega} onChange={e => setShippingData({ ...shippingData, tipoEntrega: e.target.value })} className="border p-2 rounded col-span-1 md:col-span-2">
                                     <option value="">Tipo de entrega</option>
                                     <option value="domicilio">A domicilio</option>
                                     <option value="agencia">Agencia DAC</option>
@@ -134,20 +118,16 @@ const CheckoutPage = () => {
 
                             {!confirmed && (
                                 <button
-                                    className="mt-6 bg-black text-white px-4 py-2 rounded font-bold"
-                                    onClick={() => setConfirmed(true)}
+                                    className={`mt-6 px-4 py-2 rounded font-bold ${isFormValid ? 'bg-black text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+                                    onClick={() => isFormValid && setConfirmed(true)}
+                                    disabled={!isFormValid}
                                 >
                                     Confirmar datos y generar pago
                                 </button>
                             )}
                         </motion.div>
 
-                        <motion.div
-                            className="bg-white text-black p-6 rounded-lg"
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.2 }}
-                        >
+                        <motion.div className="bg-white text-black p-6 rounded-lg" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
                             <h2 className="text-2xl font-semibold mb-4">Resumen de compra</h2>
                             <ul className="space-y-4">
                                 {items.map((item, i) => (
@@ -172,12 +152,7 @@ const CheckoutPage = () => {
                         </motion.div>
 
                         {confirmed && preferenceId && (
-                            <motion.div
-                                className="bg-white text-black p-6 rounded-lg mt-8"
-                                initial={{ opacity: 0, y: 30 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.5, delay: 0.3 }}
-                            >
+                            <motion.div className="bg-white text-black p-6 rounded-lg mt-8" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
                                 <Payment
                                     key={preferenceId}
                                     initialization={{
@@ -195,6 +170,7 @@ const CheckoutPage = () => {
                                     onSubmit={async ({ formData }) => {
                                         const orden = {
                                             nombre: shippingData.nombre,
+                                            email: shippingData.email,
                                             telefono: shippingData.telefono,
                                             departamento: shippingData.departamento,
                                             direccion: shippingData.direccion,
@@ -211,9 +187,9 @@ const CheckoutPage = () => {
                                         }));
 
                                         localStorage.setItem('items_comprados', JSON.stringify(items));
-                                        
-
                                         console.log("🧾 Orden generada:", orden);
+                                        console.log("📦 Productos comprados:", items);
+                                        console.log("📧 Email del cliente:", shippingData.email);
 
                                         clearCart();
                                         return true;
