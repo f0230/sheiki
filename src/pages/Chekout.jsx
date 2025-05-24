@@ -10,8 +10,6 @@ import { motion } from 'framer-motion';
 
 const CheckoutPage = () => {
     const { items, clearCart } = useCart();
-    const { preferenceId, loading, error } = usePreference(items, shippingData, shippingCost);
-
     const calculateTotal = () =>
         items.reduce((total, item) => total + item.precio * item.quantity, 0);
 
@@ -22,6 +20,9 @@ const CheckoutPage = () => {
         direccion: '',
     });
     const [shippingCost, setShippingCost] = useState(0);
+
+    const { preferenceId, loading, error } = usePreference(items, shippingData, shippingCost);
+
     
 
     useEffect(() => {
