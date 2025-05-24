@@ -12,27 +12,39 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { items } = req.body;
+        const { items, shippingData, shippingCost } = req.body;
 
         console.log("📥 Items recibidos:", items);
-        console.log("🔐 Token parcial:", process.env.MP_ACCESS_TOKEN?.slice(0, 10));
+        console.log("🚚 Datos de envío:", shippingData);
+        console.log("💰 Costo de envío:", shippingCost);
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ error: 'Items inválidos o vacíos' });
         }
 
         const preference = {
-            items: items.map((item) => ({
-                title: item.nombre,
-                unit_price: item.precio,
-                quantity: item.quantity,
-            })),
+            items: [
+                ...items.map((item) => ({
+                    title: item.nombre,
+                    unit_price: item.precio,
+                    quantity: item.quantity,
+                })),
+                ...(shippingCost > 0 ? [{
+                    title: `Costo de envío (${shippingData?.departamento || 'Sin depto'})`,
+                    unit_price: shippingCost,
+                    quantity: 1,
+                }] : []),
+            ],
             back_urls: {
                 success: 'https://sheiki.uy/success',
                 failure: 'https://sheiki.uy/failure',
                 pending: 'https://sheiki.uy/pending',
             },
             auto_return: 'approved',
+            metadata: {
+                ...shippingData,
+                shippingCost,
+            }
         };
 
         const response = await preferenceClient.create({ body: preference });
