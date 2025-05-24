@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { MercadoPagoConfig } from 'mercadopago';
+import { MercadoPagoConfig, payments } from 'mercadopago';
 
 const supabase = createClient(
     process.env.SUPABASE_URL,
@@ -84,7 +84,7 @@ export default async function handler(req, res) {
             return res.status(200).send('Evento ignorado');
         }
 
-        const payment = await mp.payment.get({ id: data.id });
+        const payment = await payments.get({ id: data.id }, { config: mp });
 
         if (!payment || payment.status !== 'approved') {
             console.warn('⚠️ Pago no aprobado o no encontrado');
