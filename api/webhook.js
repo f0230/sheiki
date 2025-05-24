@@ -1,14 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
-import mercadopago from 'mercadopago';
 
 const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
-
-mercadopago.configure({
-    access_token: process.env.MP_ACCESS_TOKEN,
-});
 
 const procesarOrden = async ({ items, estado_pago, email_usuario, id_usuario = null, datos_envio }) => {
     let total = 0;
@@ -84,7 +79,14 @@ export default async function handler(req, res) {
             return res.status(200).send('Evento ignorado');
         }
 
-        const payment = await mercadopago.payment.get(data.id);
+        const response = await fetch(`https://api.mercadopago.com/v1/payments/${data.id}`, {
+            headers: {
+                Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        const payment = await response.json();
 
         if (!payment || payment.status !== 'approved') {
             console.warn('⚠️ Pago no aprobado o no encontrado');
