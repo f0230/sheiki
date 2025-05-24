@@ -22,14 +22,12 @@ img {
 @font-face {
   font-family: 'Blauer';
   src: url('./assets/fonts/BlauerNue-Bold.otformat')format('truetype');
-  font-weight: bold;
   font-style: bold;
 }
 
 @font-face {
   font-family: 'Blauer';
   src: url('./assets/fonts/BlauerNue-Regular.otf') format('truetype');
-  font-weight: normal;
   font-style: normal;
 }
 

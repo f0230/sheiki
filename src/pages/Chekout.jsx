@@ -29,7 +29,7 @@ const CheckoutPage = () => {
     const [preferenceId, setPreferenceId] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [shippingCost, setShippingCost] = useState(0);
+    const [shippingCost, setShippingCost] = useState(null);
 
     const [formData, setFormData] = useState({
         nombre: '',
@@ -43,6 +43,7 @@ const CheckoutPage = () => {
         items.reduce((total, item) => total + item.precio * item.quantity, 0);
 
     const formValid = formData.nombre && formData.telefono && formData.direccion && formData.departamento;
+    const mostrarPago = preferenceId && formValid && shippingCost !== null;
 
     useEffect(() => {
         const subtotal = calculateSubtotal();
@@ -137,10 +138,13 @@ const CheckoutPage = () => {
                             </form>
                         </div>
 
-                        {preferenceId && formValid && (
+                        {mostrarPago && (
                             <div className="bg-white border p-6 rounded-lg shadow-sm mt-8">
                                 <Payment
-                                    initialization={{ preferenceId }}
+                                    initialization={{
+                                        amount: calculateSubtotal() + shippingCost,
+                                        preferenceId,
+                                    }}
                                     onSubmit={async () => {
                                         localStorage.setItem('datos_envio', JSON.stringify({
                                             ...formData,
