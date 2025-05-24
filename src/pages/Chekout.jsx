@@ -55,7 +55,7 @@ const CheckoutPage = () => {
     }, [items]);
 
     return (
-        <div className="bg-[#D65FA5] text-white font-product min-h-screen">
+        <div className=" min-h-screen">
             <Header />
 
             <main className="max-w-[1440px] mx-auto px-4 py-12">

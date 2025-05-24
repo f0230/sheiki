@@ -14,7 +14,7 @@ const CartPage = () => {
     };
 
     return (
-        <div className="bg-[#D65FA5] text-white font-product min-h-screen justify-center">
+        <div className=" min-h-screen justify-center">
             <Header />
             <main className="max-w-[1080px] mx-auto px-4 py-12">
                 {/* Botón para ir atrás */}
