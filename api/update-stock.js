@@ -56,18 +56,29 @@ export default async function handler(req, res) {
             total += precio * quantity;
         }
 
+        // Costo de envío
+        const costoEnvio = datos_envio?.shippingCost || 0;
+        const envioGratis = total >= 1800 || datos_envio?.tipoEntrega === 'retiro';
+        const totalFinal = total + costoEnvio;
+
+        const orden = {
+            id_usuario,
+            email_usuario,
+            items_comprados: items,
+            total: totalFinal,
+            estado_pago,
+            nombre: datos_envio.nombre ?? null,
+            telefono: datos_envio.telefono ?? null,
+            direccion: datos_envio.direccion ?? null,
+            departamento: datos_envio.departamento ?? null,
+            tipo_entrega: datos_envio.tipoEntrega ?? null,
+            costo_envio: costoEnvio,
+            envio_gratis: envioGratis,
+        };
+
         const { error: insertError } = await supabase
             .from('ordenes')
-            .insert([{
-                id_usuario,
-                email_usuario,
-                items_comprados: items,
-                total,
-                estado_pago,
-                nombre: datos_envio.nombre ?? null,
-                telefono: datos_envio.telefono ?? null,
-                direccion: datos_envio.direccion ?? null,
-            }]);
+            .insert([orden]);
 
         if (insertError) {
             console.error('❌ Error al guardar orden:', insertError);

@@ -7,11 +7,22 @@ import { usePreference } from '../hooks/usePreference';
 import SkeletonLoader from '../components/SkeletonLoader';
 import { motion } from 'framer-motion';
 
-// Función local para calcular el costo de envío
-const calcularCostoEnvio = (departamento, total) => {
+const calcularCostoEnvio = ({ tipoEntrega, departamento, total }) => {
     if (total >= 1800) return 0;
-    if (departamento.trim().toLowerCase() === 'paysandú') return 100;
-    return 250;
+    if (!tipoEntrega) return 0;
+
+    const tipo = tipoEntrega.toLowerCase();
+    const dpto = departamento.trim().toLowerCase();
+
+    if (tipo === 'retiro') return 0;
+    if (tipo === 'agencia') return 180;
+
+    if (tipo === 'domicilio') {
+        if (dpto === 'paysandú') return 100;
+        return 250;
+    }
+
+    return 0;
 };
 
 const departamentosUY = [
@@ -40,9 +51,13 @@ const CheckoutPage = () => {
 
     useEffect(() => {
         const total = calculateTotal();
-        const costo = calcularCostoEnvio(shippingData.departamento, total);
+        const costo = calcularCostoEnvio({
+            tipoEntrega: shippingData.tipoEntrega,
+            departamento: shippingData.departamento,
+            total,
+        });
         setShippingCost(costo);
-    }, [shippingData.departamento, items]);
+    }, [shippingData.tipoEntrega, shippingData.departamento, items]);
 
     return (
         <div className="text-white font-product min-h-screen">
@@ -113,6 +128,7 @@ const CheckoutPage = () => {
                                     <option value="">Tipo de entrega</option>
                                     <option value="domicilio">A domicilio</option>
                                     <option value="agencia">Agencia DAC</option>
+                                    <option value="retiro">Retiro en local (Paysandú)</option>
                                 </select>
                             </div>
 
@@ -184,10 +200,15 @@ const CheckoutPage = () => {
                                             direccion: shippingData.direccion,
                                             tipoEntrega: shippingData.tipoEntrega || null,
                                             costo_envio: shippingCost,
-                                            envio_gratis: calculateTotal() >= 1800,
+                                            envio_gratis: calculateTotal() >= 1800 || shippingData.tipoEntrega === 'retiro',
                                             total: calculateTotal() + shippingCost,
                                             productos: items,
                                         };
+
+                                        localStorage.setItem('datos_envio', JSON.stringify({
+                                            ...shippingData,
+                                            shippingCost,
+                                        }));
 
                                         console.log("🧾 Orden generada:", orden);
 

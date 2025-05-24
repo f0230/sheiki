@@ -1,4 +1,3 @@
-// src/pages/SuccessPage.jsx
 import React, { useEffect } from 'react';
 import { useCart } from '../store/useCart';
 import { useAuth } from '../context/AuthContext';
@@ -20,7 +19,14 @@ const SuccessPage = () => {
                         estado_pago: 'aprobado',
                         id_usuario: user?.id ?? null,
                         email_usuario: user?.email ?? null,
-                        datos_envio: datosEnvio,
+                        datos_envio: {
+                            nombre: datosEnvio.nombre,
+                            telefono: datosEnvio.telefono,
+                            direccion: datosEnvio.direccion,
+                            departamento: datosEnvio.departamento,
+                            tipoEntrega: datosEnvio.tipoEntrega,
+                            shippingCost: datosEnvio.shippingCost ?? 0,
+                        },
                     }),
                 });
 
@@ -31,13 +37,13 @@ const SuccessPage = () => {
 
                 console.log('✅ Orden registrada correctamente');
                 clearCart();
-                localStorage.removeItem('datos_envio'); // Limpiar después de guardar
+                localStorage.removeItem('datos_envio');
             } catch (err) {
                 console.error('❌ Error al enviar orden:', err);
             }
         };
 
-        if (items.length > 0) {
+        if (items.length > 0 && datosEnvio) {
             enviarDatos();
         }
     }, [items, clearCart, user]);
