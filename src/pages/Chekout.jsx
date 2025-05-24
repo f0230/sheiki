@@ -1,4 +1,3 @@
-// src/pages/Chekout.jsx
 import React, { useEffect, useState } from 'react';
 import { useCart } from '../store/useCart';
 import Header from '../components/Header';
@@ -113,7 +112,6 @@ const CheckoutPage = () => {
                             </div>
                         </div>
 
-                        {/* Formulario */}
                         <div className="bg-white border p-6 rounded-lg shadow-sm mt-8">
                             <h2 className="text-xl font-semibold mb-4">Datos de envío</h2>
                             <form className="space-y-4">
@@ -139,14 +137,10 @@ const CheckoutPage = () => {
                             </form>
                         </div>
 
-                        {/* Pago */}
                         {preferenceId && formValid && (
                             <div className="bg-white border p-6 rounded-lg shadow-sm mt-8">
                                 <Payment
-                                    initialization={{
-                                        amount: calculateSubtotal() + shippingCost,
-                                        preferenceId,
-                                    }}
+                                    initialization={{ preferenceId }}
                                     onSubmit={async () => {
                                         localStorage.setItem('datos_envio', JSON.stringify({
                                             ...formData,
