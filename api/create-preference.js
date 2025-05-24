@@ -14,10 +14,6 @@ export default async function handler(req, res) {
     try {
         const { items, shippingData, shippingCost } = req.body;
 
-        console.log("📥 Items recibidos:", items);
-        console.log("🚚 Datos de envío:", shippingData);
-        console.log("💰 Costo de envío:", shippingCost);
-
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ error: 'Items inválidos o vacíos' });
         }
@@ -30,7 +26,7 @@ export default async function handler(req, res) {
                     quantity: item.quantity,
                 })),
                 ...(shippingCost > 0 ? [{
-                    title: `Costo de envío (${shippingData?.departamento || 'Sin depto'})`,
+                    title: `Costo de envío (${shippingData?.tipoEntrega || 'entrega'})`,
                     unit_price: shippingCost,
                     quantity: 1,
                 }] : []),
@@ -42,8 +38,9 @@ export default async function handler(req, res) {
             },
             auto_return: 'approved',
             metadata: {
-                ...shippingData,
+                shippingData,
                 shippingCost,
+                tipoEntrega: shippingData?.tipoEntrega || null
             }
         };
 
