@@ -3,11 +3,12 @@ import { useCart } from '../store/useCart';
 import { useAuth } from '../context/AuthContext';
 
 const SuccessPage = () => {
-    const { items, clearCart } = useCart();
+    const { clearCart } = useCart();
     const { user } = useAuth();
 
     useEffect(() => {
         const datosEnvio = JSON.parse(localStorage.getItem('datos_envio') || '{}');
+        const items = JSON.parse(localStorage.getItem('items_comprados') || '[]');
 
         const enviarDatos = async () => {
             try {
@@ -38,15 +39,16 @@ const SuccessPage = () => {
                 console.log('✅ Orden registrada correctamente');
                 clearCart();
                 localStorage.removeItem('datos_envio');
+                localStorage.removeItem('items_comprados');
             } catch (err) {
                 console.error('❌ Error al enviar orden:', err);
             }
         };
 
-        if (items.length > 0 && datosEnvio) {
+        if (items.length > 0) {
             enviarDatos();
         }
-    }, [items, clearCart, user]);
+    }, [clearCart, user]);
 
     return (
         <div className="min-h-screen bg-green-100 flex flex-col items-center justify-center text-center px-4">

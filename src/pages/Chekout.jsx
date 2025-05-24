@@ -210,6 +210,9 @@ const CheckoutPage = () => {
                                             shippingCost,
                                         }));
 
+                                        localStorage.setItem('items_comprados', JSON.stringify(items));
+                                        
+
                                         console.log("🧾 Orden generada:", orden);
 
                                         clearCart();

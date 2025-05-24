@@ -38,7 +38,12 @@ export default async function handler(req, res) {
                 .single();
 
             if (fetchError || !variante) {
-                console.error('Error buscando variante:', fetchError);
+                console.error('⚠️ Variante no encontrada o error:', fetchError, 'Datos:', { id, color, talle });
+                continue;
+            }
+
+            if (typeof variante.stock !== 'number') {
+                console.error('❌ Variante sin campo stock válido:', variante);
                 continue;
             }
 
@@ -50,11 +55,14 @@ export default async function handler(req, res) {
                 .eq('id', variante.id);
 
             if (updateError) {
-                console.error('Error actualizando stock:', updateError);
+                console.error('❌ Error actualizando stock de variante ID', variante.id, ':', updateError);
+            } else {
+                console.log(`✅ Stock actualizado: variante ID ${variante.id}, nuevo stock: ${nuevoStock}`);
             }
 
             total += precio * quantity;
         }
+        
 
         // Costo de envío
         const costoEnvio = datos_envio?.shippingCost || 0;
