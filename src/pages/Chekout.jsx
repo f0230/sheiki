@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCart } from '../store/useCart';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -7,9 +7,10 @@ import { usePreference } from '../hooks/usePreference';
 import SkeletonLoader from '../components/SkeletonLoader';
 import { motion } from 'framer-motion';
 
+
 const CheckoutPage = () => {
     const { items, clearCart } = useCart();
-    const { preferenceId, loading, error } = usePreference(items);
+    const { preferenceId, loading, error } = usePreference(items, shippingData, shippingCost);
 
     const calculateTotal = () =>
         items.reduce((total, item) => total + item.precio * item.quantity, 0);
@@ -138,7 +139,7 @@ const CheckoutPage = () => {
                             >
                                 <Payment
                                     initialization={{
-                                        amount: calculateTotal(),
+                                                    amount: calculateTotal() + shippingCost,
                                         preferenceId,
                                     }}
                                     customization={{
