@@ -36,7 +36,6 @@ const CartPage = () => {
                                         <p className="text-sm">Color: {item.color} / Talle: {item.talle}</p>
                                         <p className="text-sm">Cantidad: {item.quantity}</p>
                                         <p className="text-sm">Precio unitario: ${item.precio}</p>
-                                        <p className="text-sm">Total: ${item.precio * item.quantity}</p>
                                     </div>
                                     <button onClick={() => removeFromCart(i)} className="text-red-500 hover:underline text-sm">Quitar</button>
                                 </li>
