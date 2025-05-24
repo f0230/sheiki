@@ -27,12 +27,12 @@ const FreeShippingMarquee = () => {
     const repeatedPhrases = [...phrases, ...phrases]; // duplicado para bucle perfecto
 
     return (
-        <div className="w-full overflow-hidden bg-gradient-to-r from-[#E06EAC] via-[#D65FA5] to-[#E06EAC] text-white py-2 font-product text-sm md:text-base relative">
+        <div className="mt-[55px] w-full overflow-hidden bg-black dark:bg-darkbg py-2 text-sm  relative">
             <div className="flex gap-12 whitespace-nowrap w-max" ref={marqueeRef}>
                 {repeatedPhrases.map((text, i) => (
                     <span
                         key={i}
-                        className="uppercase tracking-wide font-semibold drop-shadow glow-text"
+                        className="uppercase tracking-wide  text-white dark:text-black"
                     >
                         {text}
                     </span>

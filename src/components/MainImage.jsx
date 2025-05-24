@@ -44,22 +44,27 @@ const MainImage = () => {
     }, []);
 
     return (
-        <section className="flex justify-center px-4 mt-8">
+        <section className="flex justify-center px-4">
             <div
                 ref={containerRef}
-                className="w-full max-w-[1415px] h-[280px] sm:h-[360px] md:h-[420px] lg:h-[508px] rounded-xl shadow-lg overflow-hidden"
+                className="pt-4 w-full max-w-[1415px] h-[280px] sm:h-[360px] md:h-[420px] lg:h-[508px]  md:pt-8  overflow-hidden"
             >
                 <div
                     ref={innerRef}
                     className="w-full h-full bg-cover bg-center transition-transform duration-500"
                     style={{ backgroundImage: `url(${img3})` }}
                 >
-                    <div className="absolute bottom-2 right-4 text-white text-sm sm:text-xs">
-                        video
+                    <div className="absolute flex justify-center items-center dark:bg-darkbg bg-lightbg  w-[85px] h-[35px] md:w-[192px] md:h-[73px]">
+                        <p className="text-[30px] md:text-[70px]">NEW</p>
                     </div>
+
                 </div>
             </div>
+            <div>
+                
+            </div>
         </section>
+        
     );
 };
 

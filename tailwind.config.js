@@ -1,20 +1,18 @@
-/** @type {import('tailwindcss').Config} */
+// tailwind.config.js
 export default {
-    content: [
-        "./index.html",
-        "./src/**/*.{js,jsx,ts,tsx}",
-    ],
+    darkMode: 'class',
+    content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
     theme: {
         extend: {
             colors: {
-                primary: "#E06EAC",
-                asd: "#E02EAS"
+                lightbg: '#FFFCEA',
+                darkbg: '#D65FA5',
             },
             fontFamily: {
-                'product': ['ProductSans', 'sans-serif'],
-
+                blauer: ['Blauer', 'sans-serif'], // suponiendo que usás esta fuente
             },
         },
     },
     plugins: [],
-}
+};
+  

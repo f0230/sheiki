@@ -6,15 +6,12 @@
 /* index.css */
 @layer base {
   body {
-    @apply font-product text-black bg-white;
+    @apply font-blauer text-black bg-lightbg transition-colors duration-500;
   }
 
-     img {
-       pointer-events: none;
-       user-select: none;
-       -webkit-user-drag: none;
-     }
-}
+  html.dark body {
+    @apply bg-darkbg text-white;
+  }}
 
 img {
   pointer-events: none;
@@ -23,16 +20,14 @@ img {
 
 
 @font-face {
-  font-family: 'ProductSans';
-  src: url('./assets/fonts/ProductSansBold.ttf') format('truetype');
-  font-weight: 700;
+  font-family: 'Blauer';
+  src: url('./assets/fonts/BlauerNue-Bold.otformat')format('truetype');
   font-style: bold;
 }
 
 @font-face {
-  font-family: 'ProductSans';
-  src: url('./assets/fonts/ProductSansRegular.ttf') format('truetype');
-  font-weight: 400;
+  font-family: 'Blauer';
+  src: url('./assets/fonts/BlauerNue-Regular.otf') format('truetype');
   font-style: normal;
 }
 

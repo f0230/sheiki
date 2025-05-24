@@ -113,7 +113,7 @@ const Footer = () => {
 
 
     return (
-        <div ref={footerRef} className="overflow-hidden w-full bg-[#D65FA5] text-black flex justify-center">
+        <div ref={footerRef} className="overflow-hidden w-full  text-black flex justify-center">
             <footer className="w-full max-w-[1080px] px-6 pt-12 pb-36 md:pb-48 relative flex flex-col justify-start items-center">
                 {/* Texto central superior */}
                 <p className="text-lg md:text-xl font-product mb-6">Pantuflas con estilo</p>

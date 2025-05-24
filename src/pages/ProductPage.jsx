@@ -47,18 +47,50 @@ const ProductPage = () => {
     gsap.to(modalRef.current, { opacity: 0, duration: 0.3, pointerEvents: 'none' });
   };
 
-    useEffect(() => {
-        const fetchData = async () => {
-            const { data: prod } = await supabase.from('productos').select('*').eq('slug', 'pantufla-soft').single();
-            if (!prod) return;
-            const { data: vars } = await supabase.from('variantes').select('*').eq('producto_id', prod.id).gt('stock', 0);
-            const { data: imgs } = await supabase.from('imagenes_producto').select('*').eq('producto_id', prod.id);
-            setProducto(prod);
-            setVariantes(vars);
-            setImagenesPorColor(imgs);
-        };
-        fetchData();
-    }, []);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const { data: prod, error: errorProd } = await supabase
+          .from('productos')
+          .select('*')
+          .eq('slug', 'pantufla-soft')
+          .single();
+
+        if (errorProd || !prod) return;
+
+        const [varsRes, imgsRes] = await Promise.all([
+          supabase
+            .from('variantes')
+            .select('*')
+            .eq('producto_id', prod.id)
+            .gt('stock', 0),
+          supabase
+            .from('imagenes_producto')
+            .select('*')
+            .eq('producto_id', prod.id),
+        ]);
+
+        if (varsRes.error || imgsRes.error) return;
+
+        setProducto(prod);
+        setVariantes(varsRes.data);
+        setImagenesPorColor(imgsRes.data);
+      } catch (err) {
+        console.error('❌ Error al cargar producto:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+
+    fetchData();
+  }, []);
+  
+
+  
 
 
   useEffect(() => {
@@ -68,10 +100,40 @@ const ProductPage = () => {
 
   useEffect(() => {
     if (imgRef.current && infoRef.current) {
-      gsap.fromTo(imgRef.current, { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 1, ease: 'power2.out', scrollTrigger: { trigger: imgRef.current, start: 'top 80%' } });
-      gsap.fromTo(infoRef.current, { opacity: 0, x: 50 }, { opacity: 1, x: 0, duration: 1, ease: 'power2.out', scrollTrigger: { trigger: infoRef.current, start: 'top 80%' } });
+      gsap.fromTo(
+        imgRef.current,
+        { opacity: 0, x: -40, filter: 'blur(6px)' },
+        {
+          opacity: 1,
+          x: 0,
+          filter: 'blur(0px)',
+          duration: 1.2,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: imgRef.current,
+            start: 'top 80%',
+          },
+        }
+      );
+
+      gsap.fromTo(
+        infoRef.current,
+        { opacity: 0, x: 40, filter: 'blur(6px)' },
+        {
+          opacity: 1,
+          x: 0,
+          filter: 'blur(0px)',
+          duration: 1.2,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: infoRef.current,
+            start: 'top 80%',
+          },
+        }
+      );
     }
   }, []);
+  
 
   const coloresDisponibles = [...new Set(variantes.map(v => v.color))];
   const tallesDisponibles = selectedColor ? [...new Set(variantes.filter(v => v.color === selectedColor).map(v => v.talle))] : [];
@@ -79,19 +141,31 @@ const ProductPage = () => {
 
   useEffect(() => {
     if (!imagenesSeleccionadas.length) return;
-    imageRefs.current.forEach(el => gsap.set(el, { clearProps: 'all' }));
-    gsap.to(imageRefs.current, {
-      opacity: 0,
-      duration: 0.2,
-      onComplete: () => {
-        imageRefs.current.forEach((el, i) => {
-          if (el) {
-            gsap.fromTo(el, { opacity: 0, x: 20, scale: 0.98 }, { opacity: 1, x: 0, scale: 1, duration: 0.6, ease: 'power2.out', stagger: 0.05, overwrite: 'auto' });
+
+    imageRefs.current.forEach((el, i) => {
+      if (el) {
+        gsap.fromTo(
+          el,
+          {
+            opacity: 0,
+            scale: 0.95,
+            y: 20,
+            filter: 'blur(4px)',
+          },
+          {
+            opacity: 1,
+            scale: 1,
+            y: 0,
+            filter: 'blur(0px)',
+            duration: 0.8,
+            ease: 'power3.out',
+            delay: i * 0.05,
           }
-        });
+        );
       }
     });
   }, [selectedColor]);
+  
 
   useEffect(() => {
     if (selectedColor && selectedTalle) {
@@ -123,11 +197,28 @@ const ProductPage = () => {
   };
   const handleMouseUp = () => isDragging.current = false;
 
+
+  if (isLoading) {
+    return (
+      <div className="mt-[50px] px-4 grid grid-cols-1 md:grid-cols-2 gap-8 animate-pulse max-w-[1440px] mx-auto">
+        <div className="w-full h-[375px] md:h-[750px] bg-gray-200 rounded-lg"></div>
+        <div className="flex flex-col gap-4 py-12">
+          <div className="h-8 bg-gray-300 rounded w-2/3"></div>
+          <div className="h-6 bg-gray-300 rounded w-1/2"></div>
+          <div className="h-10 bg-gray-400 rounded w-1/3"></div>
+          <div className="h-10 bg-gray-200 rounded w-full mt-4"></div>
+          <div className="h-6 bg-gray-200 rounded w-1/4 mt-2"></div>
+        </div>
+      </div>
+    );
+  }
+
+
   return (
-    <div className="bg-[#D65FA5] text-white font-product min-h-screen">
+    <div className=" mt-[50px]  font-product min-h-screen">
       <Header ref={carritoIconRef} />
       <FreeShippingMarquee />
-      <main className="max-w-[1440px] mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+      <main className="max-w-[1440px] mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-8">
         <div
           ref={imgRef}
           className="flex overflow-x-auto snap-x gap-4 scroll-smooth no-scrollbar max-md:pb-4 max-md:mb-4 max-md:flex-nowrap cursor-grab active:cursor-grabbing select-none"
@@ -148,15 +239,15 @@ const ProductPage = () => {
                 gsap.to(imgRef.current, { scrollTo: { x: target.offsetLeft }, duration: 0.8, ease: 'power2.out' });
                 gsap.fromTo(target, { scale: 0.95, rotate: -1 }, { scale: 1, rotate: 0, duration: 0.8, ease: 'elastic.out(1, 0.4)' });
               }}
-              className="rounded-xl w-full h-auto min-w-[85%] max-w-[85%] snap-center object-cover cursor-pointer"
+              className="w-full h-[375px] md:h-[750px] min-w-[100%] snap-center object-cover cursor-pointer"
             />
           ))}
         </div>
 
-        <div className="flex flex-col justify-center gap-6" ref={infoRef}>
-                  <h1 className="text-4xl font-bold">{producto?.nombre}</h1>
-                  <p className="text-lg">{producto?.descripcion}</p>
-                  <p className="text-xl font-semibold">${producto?.precio}</p>  {/* Mostrar el precio */}
+        <div className="flex flex-col items-start md:py-12 justify-between gap-2" ref={infoRef}>
+                  <h1 className="text-[30px] md:text-[45px] font-regular leading-none">{producto?.nombre}</h1>
+                  <p className="text-[16px] md:text-p[20px] leading-none">{producto?.descripcion}</p>
+                  <p className=" text-[30px] md:text-[45px] font-bold">${producto?.precio}</p>  {/* Mostrar el precio */}
 
 
 
@@ -169,7 +260,7 @@ const ProductPage = () => {
                   onClick={() => { setSelectedColor(color); setSelectedTalle(''); }}
                   onMouseEnter={e => gsap.to(e.currentTarget, { scale: 1.1, duration: 0.2 })}
                   onMouseLeave={e => gsap.to(e.currentTarget, { scale: 1.0, duration: 0.2 })}
-                  className={`px-4 py-2 rounded-full border transition-transform ${selectedColor === color ? 'bg-white text-black' : 'border-white'}`}
+                  className={`px-4 py-2 rounded-full border transition-transform  text-[12px] md:text-[14px] ${selectedColor === color ? 'dark:bg-white dark:text-black bg-black text-white' : 'border-black dark:border-white '}`}
                 >
                   {color}
                 </button>
@@ -180,9 +271,9 @@ const ProductPage = () => {
           {selectedColor && (
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <label className="font-semibold">Talle</label>
+                <label className="font-bold">Talle</label>
                 {stockDisponible !== null && (
-                  <span className="text-sm text-white/70 stock-info">
+                  <span className="text-sm text-black dark:text-white stock-info">
                     (Stock: <strong>{stockDisponible}</strong>)
                   </span>
                 )}
@@ -194,7 +285,7 @@ const ProductPage = () => {
                     onClick={() => setSelectedTalle(talle)}
                     onMouseEnter={e => gsap.to(e.currentTarget, { scale: 1.1, duration: 0.2 })}
                     onMouseLeave={e => gsap.to(e.currentTarget, { scale: 1.0, duration: 0.2 })}
-                    className={`px-4 py-2 rounded-full border transition-transform ${selectedTalle === talle ? 'bg-white text-black' : 'border-white'}`}
+                    className={`px-2 py-2 rounded-full text-[12px] md:text-[14px] border transition-transform ${selectedTalle === talle ? 'dark:bg-white dark:text-black bg-black text-white' : 'border-black dark:border-white'}`}
                   >
                     {talle}
                   </button>
@@ -204,7 +295,7 @@ const ProductPage = () => {
           )}
 
           <button
-            className="mt-4 bg-black text-white py-3 px-6 rounded-full text-lg hover:bg-gray-900 transition disabled:opacity-50"
+            className="mt-4 bg-black text-white w-[220px] h-[40px] md:h-[53px] md:w-[335px] rounded-full text-lg hover:bg-gray-900 transition disabled:opacity-50"
             disabled={!selectedColor || !selectedTalle || stockDisponible === 0}
             onClick={() => {
               if (!producto) return;
@@ -226,14 +317,14 @@ const ProductPage = () => {
 
           <button
             onClick={abrirTabla}
-            className="mt-2 underline text-sm hover:text-white/80 transition"
+            className="mt-2 underline text-sm transition"
           >
             Ver tabla de talles
           </button>
         </div>
 
-        <div ref={modalRef} className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none opacity-0 transition-all duration-300 bg-white/30 backdrop-blur-[3px]">
-          <div ref={tablaRef} className="bg-white shadow-2xl rounded-2xl p-6 w-[90%] max-w-sm text-black scale-90 border border-white/20">
+        <div ref={modalRef} className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none opacity-0 transition-all duration-300 dark:bg-white/30 bg-black/30 backdrop-blur-[15px] text-black">
+          <div ref={tablaRef} className="bg-white shadow-2xl rounded-2xl p-6 w-[90%] max-w-sm  scale-90 border border-white/20">
             <h2 className="text-xl font-bold mb-4 text-center">Tabla de talles</h2>
             <table className="w-full text-sm border border-gray-300 rounded-md overflow-hidden">
               <thead><tr className="bg-gray-200"><th className="border p-2">Talle</th><th className="border p-2">Largo (cm)</th></tr></thead>
@@ -246,7 +337,7 @@ const ProductPage = () => {
                 ))}
               </tbody>
             </table>
-            <button onClick={cerrarTabla} className="mt-4 mx-auto block text-sm text-primary hover:underline">Cerrar</button>
+            <button onClick={cerrarTabla} className="mt-4 mx-auto block text-sm  hover:underline">Cerrar</button>
           </div>
         </div>
       </main>

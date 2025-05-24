@@ -11,12 +11,12 @@ import img2 from '../assets/img2.webp';
 
 const Home = () => {
   return (
-    <div className="w-full  bg-[#D65FA5] text-white font-product">
+    <div className="w-full">
       <Header />
       <Hero />
       <MainImage />
       <div className="w-full max-w-[1440px] mx-auto">
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 px-4 md:px-8 mt-12">
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-4 px-4 mt-4">
           <ProductCard title="Tu estilo en tu casa" imgSrc={img1} />
           <ProductCard imgSrc={img2} />
         </section>
