@@ -10,6 +10,14 @@ const CheckoutPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+
+    const [formData, setFormData] = useState({
+        nombre: '',
+        telefono: '',
+        direccion: '',
+    });
+      
+
     const calculateTotal = () =>
         items.reduce((total, item) => total + item.precio * item.quantity, 0);
 
@@ -55,7 +63,7 @@ const CheckoutPage = () => {
     }, [items]);
 
     return (
-        <div className=" min-h-screen">
+        <div className=" text-white font-product min-h-screen">
             <Header />
 
             <main className="max-w-[1440px] mx-auto px-4 py-12">
@@ -84,6 +92,42 @@ const CheckoutPage = () => {
                                 <span>${calculateTotal()}</span>
                             </div>
                         </div>
+                                    <div className="bg-white text-black p-6 rounded-lg mt-8">
+                                        <h2 className="text-xl font-semibold mb-4">Datos de contacto y envío</h2>
+                                        <form className="space-y-4">
+                                            <div>
+                                                <label className="block font-medium">Nombre completo</label>
+                                                <input
+                                                    type="text"
+                                                    className="w-full border rounded px-3 py-2"
+                                                    value={formData.nombre}
+                                                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block font-medium">Teléfono</label>
+                                                <input
+                                                    type="tel"
+                                                    className="w-full border rounded px-3 py-2"
+                                                    value={formData.telefono}
+                                                    onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block font-medium">Dirección de envío</label>
+                                                <input
+                                                    type="text"
+                                                    className="w-full border rounded px-3 py-2"
+                                                    value={formData.direccion}
+                                                    onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+                                        </form>
+                                    </div>
+
 
                         {preferenceId && (
                             <div className="bg-white text-black p-6 rounded-lg mt-8">
