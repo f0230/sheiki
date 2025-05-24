@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
-import { MercadoPagoConfig, payments } from 'mercadopago';
+import pkg from 'mercadopago';
+
+const { MercadoPagoConfig, payments } = pkg;
 
 const supabase = createClient(
     process.env.SUPABASE_URL,
