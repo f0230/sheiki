@@ -10,11 +10,11 @@ const mp = new MercadoPagoConfig({
     accessToken: process.env.MP_ACCESS_TOKEN,
 });
 
-const procesarOrden = async ({ items, estado_pago, email_usuario, datos_envio }) => {
+const procesarOrden = async ({ items, estado_pago, email_usuario, id_usuario = null, datos_envio }) => {
     let total = 0;
 
     for (const item of items) {
-        const { id, color, talle, quantity, unit_price } = item;
+        const { id, color, talle, quantity, precio = item.unit_price } = item;
 
         const { data: variante, error: fetchError } = await supabase
             .from('variantes')
@@ -42,7 +42,7 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, datos_envio })
             console.log(`✅ Stock actualizado: variante ID ${variante.id}`);
         }
 
-        total += unit_price * quantity;
+        total += precio * quantity;
     }
 
     const costoEnvio = datos_envio?.shippingCost || 0;
@@ -50,7 +50,7 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, datos_envio })
     const totalFinal = total + costoEnvio;
 
     const orden = {
-        id_usuario: null,
+        id_usuario,
         email_usuario,
         items_comprados: items,
         total: totalFinal,
@@ -75,31 +75,34 @@ export default async function handler(req, res) {
         return res.status(405).send('Método no permitido');
     }
 
-    const { type, data } = req.body;
-    if (type !== 'payment') {
-        return res.status(200).send('Evento ignorado');
-    }
-
     try {
-        const paymentId = data.id;
-        const payment = await mp.payment.get({ id: paymentId });
+        console.log('🔔 Webhook recibido:', req.body);
 
-        if (payment.status !== 'approved') {
+        const { type, data } = req.body;
+
+        if (type !== 'payment' || !data?.id) {
+            return res.status(200).send('Evento ignorado');
+        }
+
+        const payment = await mp.payment.get({ id: data.id });
+
+        if (!payment || payment.status !== 'approved') {
+            console.warn('⚠️ Pago no aprobado o no encontrado');
             return res.status(200).send('Pago no aprobado');
         }
 
-        const metadata = payment.metadata || {};
         const items = payment.additional_info?.items || [];
-        const email = payment.payer?.email ?? null;
+        const email_usuario = payment.payer?.email ?? null;
+        const datos_envio = payment.metadata || {};
 
         await procesarOrden({
             items,
             estado_pago: 'aprobado',
-            email_usuario: email,
-            datos_envio: metadata,
+            email_usuario,
+            datos_envio,
         });
 
-        return res.status(200).send('Orden procesada');
+        return res.status(200).send('Orden procesada desde webhook');
     } catch (err) {
         console.error('❌ Error en webhook:', err);
         return res.status(500).send('Error procesando webhook');
