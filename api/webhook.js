@@ -1,17 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
-import pkg from 'mercadopago';
-
-const { MercadoPagoConfig, payments } = pkg;
+import mercadopago from 'mercadopago';
 
 const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const mp = new MercadoPagoConfig({
-    accessToken: process.env.MP_ACCESS_TOKEN,
+// Configuramos Mercado Pago
+mercadopago.configure({
+    access_token: process.env.MP_ACCESS_TOKEN,
 });
 
+// Función para procesar la orden (la tuya queda igual)
 const procesarOrden = async ({ items, estado_pago, email_usuario, id_usuario = null, datos_envio }) => {
     let total = 0;
 
@@ -72,6 +72,7 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, id_usuario = n
     }
 };
 
+// Webhook handler corregido
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).send('Método no permitido');
@@ -86,7 +87,7 @@ export default async function handler(req, res) {
             return res.status(200).send('Evento ignorado');
         }
 
-        const payment = await payments.get({ id: data.id }, { config: mp });
+        const payment = await mercadopago.payment.get(data.id);
 
         if (!payment || payment.status !== 'approved') {
             console.warn('⚠️ Pago no aprobado o no encontrado');
