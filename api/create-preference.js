@@ -18,6 +18,17 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Items inválidos o vacíos' });
         }
 
+        const hasInvalidItem = items.some(item =>
+            !item.id || !item.nombre || !item.precio || !item.quantity
+        );
+
+        if (hasInvalidItem) {
+            return res.status(400).json({ error: 'Uno o más items tienen campos faltantes' });
+        }
+
+        // Opcional: generar referencia externa única
+        const externalReference = `orden-${Date.now()}`;
+
         const preference = {
             items: [
                 ...items.map((item) => ({
@@ -38,12 +49,14 @@ export default async function handler(req, res) {
                 pending: 'https://sheiki.uy/pending',
             },
             auto_return: 'approved',
+            external_reference: externalReference,
             metadata: {
                 shippingData,
                 shippingCost,
                 tipoEntrega: shippingData?.tipoEntrega || null,
-                items, // acá se conservan color, talle, etc.
-            }
+                items,
+                externalReference,
+            },
         };
 
         const response = await preferenceClient.create({ body: preference });

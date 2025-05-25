@@ -5,7 +5,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const procesarOrden = async ({ items, estado_pago, email_usuario, id_usuario = null, datos_envio }) => {
+const procesarOrden = async ({ items, estado_pago, email_usuario, email_cliente = null, id_usuario = null, datos_envio }) => {
     let total = 0;
 
     for (const item of items) {
@@ -47,6 +47,7 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, id_usuario = n
     const orden = {
         id_usuario,
         email_usuario,
+        email_cliente,
         items_comprados: items,
         total: totalFinal,
         estado_pago,
@@ -108,6 +109,7 @@ export default async function handler(req, res) {
         const items = payment.metadata?.items || [];
         const email_usuario = payment.payer?.email ?? null;
         const datos_envio = payment.metadata?.shippingData || {};
+        const email_cliente = datos_envio?.email ?? null;
 
         console.log('📦 Items desde metadata:', items);
         console.log('📧 Email usuario:', email_usuario);
@@ -117,6 +119,7 @@ export default async function handler(req, res) {
             items,
             estado_pago: 'aprobado',
             email_usuario,
+            email_cliente,
             datos_envio,
         });
 

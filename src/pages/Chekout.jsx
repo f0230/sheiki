@@ -3,7 +3,6 @@ import { useCart } from '../store/useCart';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Payment } from '@mercadopago/sdk-react';
-import { usePreference } from '../hooks/usePreference';
 import SkeletonLoader from '../components/SkeletonLoader';
 import { motion } from 'framer-motion';
 
@@ -47,8 +46,9 @@ const CheckoutPage = () => {
 
     const [shippingCost, setShippingCost] = useState(0);
     const [confirmed, setConfirmed] = useState(false);
-
-    const { preferenceId, loading, error } = usePreference(items, shippingData, shippingCost, confirmed);
+    const [preferenceId, setPreferenceId] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
     const isEmailValid = shippingData.email.includes('@') && shippingData.email.includes('.');
     const isFormValid = Object.values({
@@ -69,6 +69,33 @@ const CheckoutPage = () => {
         });
         setShippingCost(costo);
     }, [shippingData.tipoEntrega, shippingData.departamento, items]);
+
+    useEffect(() => {
+        const generarPreferencia = async () => {
+            if (!confirmed) return;
+            setLoading(true);
+            try {
+                const res = await fetch('/api/create-preference', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items, shippingData, shippingCost }),
+                });
+                const data = await res.json();
+                if (data.preference && data.preference.id) {
+                    setPreferenceId(data.preference.id);
+                } else {
+                    throw new Error('Preferencia no generada correctamente');
+                }
+            } catch (err) {
+                setError('No se pudo generar la preferencia de pago.');
+                console.error('❌ Error al crear preferencia:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        generarPreferencia();
+    }, [confirmed]);
 
     return (
         <div className="text-white font-product min-h-screen">
@@ -92,12 +119,7 @@ const CheckoutPage = () => {
                     <p>No hay productos en tu carrito.</p>
                 ) : (
                     <>
-                        <motion.div
-                            className="bg-white text-black p-6 rounded-lg mb-8"
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.4 }}
-                        >
+                        <motion.div className="bg-white text-black p-6 rounded-lg mb-8" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
                             <h2 className="text-xl font-semibold mb-4">Datos de envío</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <input type="text" placeholder="Nombre completo" value={shippingData.nombre} onChange={e => setShippingData({ ...shippingData, nombre: e.target.value })} className="border p-2 rounded" />
@@ -117,11 +139,7 @@ const CheckoutPage = () => {
                             </div>
 
                             {!confirmed && (
-                                <button
-                                    className={`mt-6 px-4 py-2 rounded font-bold ${isFormValid ? 'bg-black text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
-                                    onClick={() => isFormValid && setConfirmed(true)}
-                                    disabled={!isFormValid}
-                                >
+                                <button className={`mt-6 px-4 py-2 rounded font-bold ${isFormValid ? 'bg-black text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`} onClick={() => isFormValid && setConfirmed(true)} disabled={!isFormValid}>
                                     Confirmar datos y generar pago
                                 </button>
                             )}
