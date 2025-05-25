@@ -108,8 +108,16 @@ export default async function handler(req, res) {
 
         const items = payment.metadata?.items || [];
         const email_usuario = payment.payer?.email ?? null;
-        const datos_envio = payment.metadata?.shippingData || {};
-        const email_cliente = datos_envio?.email ?? null;
+        const email_cliente = payment.metadata?.email ?? null;
+
+        const datos_envio = {
+            nombre: payment.metadata?.nombre,
+            telefono: payment.metadata?.telefono,
+            direccion: payment.metadata?.direccion,
+            departamento: payment.metadata?.departamento,
+            tipoEntrega: payment.metadata?.tipoEntrega,
+            shippingCost: payment.metadata?.shippingCost,
+        };
 
         console.log('📦 Items desde metadata:', items);
         console.log('📧 Email usuario:', email_usuario);

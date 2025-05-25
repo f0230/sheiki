@@ -26,7 +26,6 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Uno o más items tienen campos faltantes' });
         }
 
-        // Opcional: generar referencia externa única
         const externalReference = `orden-${Date.now()}`;
 
         const preference = {
@@ -51,7 +50,7 @@ export default async function handler(req, res) {
             auto_return: 'approved',
             external_reference: externalReference,
             metadata: {
-                shippingData,
+                ...shippingData, // Aplanado para evitar problemas de acceso en webhook
                 shippingCost,
                 tipoEntrega: shippingData?.tipoEntrega || null,
                 items,
