@@ -59,8 +59,6 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, email_cliente 
         costo_envio: costoEnvio,
         envio_gratis: envioGratis,
         fecha: new Date().toISOString(),
-        external_reference: payment.metadata?.externalReference ?? null // ✅ agregá esta línea
-
     };
 
     console.log('📝 Guardando orden en Supabase:', orden);
@@ -131,7 +129,6 @@ export default async function handler(req, res) {
             email_usuario,
             email_cliente,
             datos_envio,
-
         });
 
         console.log('✅ Orden procesada y stock actualizado desde webhook.');
