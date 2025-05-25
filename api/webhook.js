@@ -40,7 +40,7 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, email_cliente 
         total += precio * quantity;
     }
 
-    const costoEnvio = datos_envio?.shippingCost || 0;
+    const costoEnvio = Number(datos_envio.shippingCost) || 0;
     const envioGratis = total >= 1800 || datos_envio?.tipoEntrega === 'retiro';
     const totalFinal = total + costoEnvio;
 

@@ -184,6 +184,7 @@ const CheckoutPage = () => {
                                             debitCard: 'all',
                                             mercadoPago: 'all',
                                         },
+                                        locale: 'es-UY' 
                                     }}
                                     onSubmit={async ({ formData }) => {
                                         const orden = {
