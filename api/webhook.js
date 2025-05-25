@@ -57,7 +57,7 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, id_usuario = n
         tipo_entrega: datos_envio.tipoEntrega ?? null,
         costo_envio: costoEnvio,
         envio_gratis: envioGratis,
-        fecha_confirmacion: new Date().toISOString(),
+        fecha: new Date().toISOString(),
     };
 
     console.log('📝 Guardando orden en Supabase:', orden);
