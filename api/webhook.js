@@ -115,7 +115,7 @@ export default async function handler(req, res) {
             telefono: payment.metadata?.telefono,
             direccion: payment.metadata?.direccion,
             departamento: payment.metadata?.departamento,
-            tipoEntrega: payment.metadata?.tipoEntrega,
+            tipoEntrega: payment.metadata?.tipoEntrega ?? payment.metadata?.tipo_entrega ?? null,
             shippingCost: payment.metadata?.shippingCost,
         };
 

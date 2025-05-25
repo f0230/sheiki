@@ -50,9 +50,8 @@ export default async function handler(req, res) {
             auto_return: 'approved',
             external_reference: externalReference,
             metadata: {
-                ...shippingData, // Aplanado para evitar problemas de acceso en webhook
+                ...shippingData,
                 shippingCost,
-                tipoEntrega: shippingData?.tipoEntrega || null,
                 items,
                 externalReference,
             },
