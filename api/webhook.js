@@ -9,7 +9,7 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, id_usuario = n
     let total = 0;
 
     for (const item of items) {
-        const { id, color, talle, quantity, unit_price } = item;
+        const { id, color, talle, quantity, precio = item.unit_price } = item;
 
         const { data: variante, error: fetchError } = await supabase
             .from('variantes')
@@ -37,7 +37,7 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, id_usuario = n
             console.log(`✅ Stock actualizado: variante ID ${variante.id}`);
         }
 
-        total += unit_price * quantity;
+        total += precio * quantity;
     }
 
     const costoEnvio = datos_envio?.shippingCost || 0;
@@ -71,7 +71,7 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, id_usuario = n
 };
 
 export default async function handler(req, res) {
-    console.log('🔥 Webhook disparado')
+    console.log('🔥 Webhook disparado');
     if (req.method !== 'POST') {
         console.warn('🚫 Método no permitido:', req.method);
         return res.status(405).send('Método no permitido');
@@ -105,11 +105,11 @@ export default async function handler(req, res) {
             return res.status(200).send('Pago no aprobado');
         }
 
-        const items = payment.additional_info?.items || [];
+        const items = payment.metadata?.items || [];
         const email_usuario = payment.payer?.email ?? null;
         const datos_envio = payment.metadata?.shippingData || {};
 
-        console.log('📦 Items:', items);
+        console.log('📦 Items desde metadata:', items);
         console.log('📧 Email usuario:', email_usuario);
         console.log('📫 Datos de envío:', datos_envio);
 

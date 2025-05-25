@@ -1,5 +1,3 @@
-import { color } from 'framer-motion';
-import { col } from 'framer-motion/client';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 
 const client = new MercadoPagoConfig({
@@ -24,8 +22,6 @@ export default async function handler(req, res) {
             items: [
                 ...items.map((item) => ({
                     id: item.id,
-                    color: item.color,
-                    talle: item.talle,
                     title: item.nombre,
                     unit_price: item.precio,
                     quantity: item.quantity,
@@ -46,9 +42,7 @@ export default async function handler(req, res) {
                 shippingData,
                 shippingCost,
                 tipoEntrega: shippingData?.tipoEntrega || null,
-                items: items 
-
-                
+                items, // acá se conservan color, talle, etc.
             }
         };
 
