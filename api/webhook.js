@@ -71,6 +71,7 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, id_usuario = n
 };
 
 export default async function handler(req, res) {
+    console.log('🔥 Webhook disparado')
     if (req.method !== 'POST') {
         console.warn('🚫 Método no permitido:', req.method);
         return res.status(405).send('Método no permitido');
