@@ -8,7 +8,9 @@ import './index.css';
 import ScrollToTop from './components/ScrollToTop';
 import LoadingFallback from './components/ui/LoadingFallback'; // 👈 import del nuevo loader
 
-initMercadoPago('APP_USR-e255a7a3-c855-4cac-8ef9-b51094d2701b');
+initMercadoPago('APP_USR-e255a7a3-c855-4cac-8ef9-b51094d2701b', {
+  locale: 'es-UY', // 👈 esto es lo que forzará todo al español
+});
 
 // Lazy load para mejor rendimiento
 const Home = lazy(() => import('./pages/Home.jsx'));

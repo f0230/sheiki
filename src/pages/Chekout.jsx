@@ -171,21 +171,21 @@ const CheckoutPage = () => {
 
                         {confirmed && preferenceId && (
                             <motion.div className="bg-white text-black p-6 rounded-lg mt-8" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
-                                <Payment
-                                    key={preferenceId}
-                                    initialization={{
-                                        amount: calculateTotal() + shippingCost,
-                                        preferenceId,
-                                    }}  
-                                    locale="es-UY" // ✅ en el lugar correcto
-                                    customization={{
-                                        paymentMethods: {
-                                            ticket: 'all',
-                                            creditCard: 'all',
-                                            debitCard: 'all',
-                                            mercadoPago: 'all',
-                                        },
-                                    }}
+                                            <Payment
+                                                key={preferenceId}
+                                                initialization={{
+                                                    amount: calculateTotal() + shippingCost,
+                                                    preferenceId,
+                                                }}
+                                                locale="es-UY" // ✅ en el lugar correcto
+                                                customization={{
+                                                    paymentMethods: {
+                                                        ticket: 'all',
+                                                        creditCard: 'all',
+                                                        debitCard: 'all',
+                                                        mercadoPago: 'all',
+                                                    }
+                                                }}
                                     onSubmit={async ({ formData }) => {
                                         const orden = {
                                             nombre: shippingData.nombre,
