@@ -1,4 +1,4 @@
-// Refactorizado Checkout.jsx con lógica robusta
+// Refactorizado Checkout.jsx con resumen y flujo mejorado
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../store/useCart';
 import Header from '../components/Header';
@@ -10,29 +10,25 @@ import { motion } from 'framer-motion';
 const calcularCostoEnvio = ({ tipoEntrega, departamento, total }) => {
     if (total >= 1800) return 0;
     if (!tipoEntrega) return 0;
-
     const tipo = tipoEntrega.toLowerCase();
     const dpto = departamento.trim().toLowerCase();
-
     if (tipo === 'retiro') return 0;
     if (tipo === 'agencia') return 180;
     if (tipo === 'domicilio') return dpto === 'paysandú' ? 100 : 250;
-
     return 0;
 };
 
 const departamentosUY = ["Artigas", "Canelones", "Cerro Largo", "Colonia", "Durazno", "Flores", "Florida", "Lavalleja", "Maldonado", "Montevideo", "Paysandú", "Río Negro", "Rivera", "Rocha", "Salto", "San José", "Soriano", "Tacuarembó", "Treinta y Tres"];
 
 const CheckoutPage = () => {
-    const { items, clearCart } = useCart();
+    const { items } = useCart();
     const calculateTotal = () => items.reduce((total, item) => total + item.precio * item.quantity, 0);
-
     const [shippingData, setShippingData] = useState({ nombre: '', telefono: '', email: '', departamento: '', direccion: '', tipoEntrega: '' });
     const [shippingCost, setShippingCost] = useState(0);
     const [preferenceId, setPreferenceId] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [step, setStep] = useState('form'); // 'form' | 'summary' | 'payment'
+    const [step, setStep] = useState('form');
 
     const isEmailValid = shippingData.email.includes('@') && shippingData.email.includes('.');
     const isFormValid = Object.values(shippingData).every(v => v.trim() !== '') && isEmailValid;
@@ -55,6 +51,7 @@ const CheckoutPage = () => {
             const data = await res.json();
             if (data.preference?.id) {
                 setPreferenceId(data.preference.id);
+                localStorage.setItem('pending_payment', 'true');
                 setStep('payment');
             } else {
                 throw new Error('No se pudo generar la preferencia');
@@ -107,21 +104,78 @@ const CheckoutPage = () => {
                         )}
 
                         {step === 'payment' && preferenceId && (
-                            <motion.div className="bg-white text-black p-6 rounded-lg mt-8" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
-                                <h2 className="text-2xl font-semibold mb-4">Pagar</h2>
-                                <Payment
-                                    key={preferenceId}
-                                    initialization={{ amount: calculateTotal() + shippingCost, preferenceId }}
-                                    locale="es-UY"
-                                    customization={{ paymentMethods: { ticket: 'all', creditCard: 'all', debitCard: 'all', mercadoPago: 'all' } }}
-                                    onSubmit={async () => {
-                                        console.log("📤 Pago enviado desde Brick. Esperando webhook para confirmación.");
-                                        // NO vaciar el carrito aquí. El webhook lo hace.
-                                        return true;
-                                    }}
-                                    onError={(error) => console.error('❌ Error en Payment Brick:', error)}
-                                />
-                            </motion.div>
+                            <>
+                                <motion.div className="bg-white text-black p-6 rounded-lg" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
+                                    <h2 className="text-2xl font-semibold mb-4">Resumen de compra</h2>
+                                    <ul className="space-y-4">
+                                        {items.map((item, i) => (
+                                            <li key={i} className="flex justify-between">
+                                                <span>{item.nombre} x {item.quantity}</span>
+                                                <span>${item.precio * item.quantity}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <div className="mt-4 flex justify-between">
+                                        <span className="font-semibold">Total:</span>
+                                        <span>${calculateTotal()}</span>
+                                    </div>
+                                    <div className="mt-2 flex justify-between">
+                                        <span className="font-semibold">Envío:</span>
+                                        <span>{shippingCost === 0 ? 'Gratis' : `$${shippingCost}`}</span>
+                                    </div>
+                                    <div className="mt-2 flex justify-between text-lg font-bold">
+                                        <span>Total final:</span>
+                                        <span>${calculateTotal() + shippingCost}</span>
+                                    </div>
+                                </motion.div>
+
+                                <motion.div className="bg-white text-black p-6 rounded-lg mt-6" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
+                                    <h2 className="text-2xl font-semibold mb-4">Pagar</h2>
+                                            <Payment
+                                                key={preferenceId}
+                                                initialization={{ amount: calculateTotal() + shippingCost, preferenceId }}
+                                                locale="es-UY"
+                                                customization={{
+                                                    paymentMethods: {
+                                                        ticket: 'all',
+                                                        creditCard: 'all',
+                                                        debitCard: 'all',
+                                                        mercadoPago: 'all',
+                                                    }
+                                                }}
+                                                onSubmit={async () => {
+                                                    console.log("📤 Pago enviado desde Brick. Esperando confirmación del webhook...");
+
+                                                    const externalReference = `orden-${Date.now()}`;
+                                                    localStorage.setItem('external_reference', externalReference);
+
+                                                    const checkStatus = async () => {
+                                                        const ref = localStorage.getItem('external_reference');
+                                                        try {
+                                                            const res = await fetch(`/api/check-order-status?ref=${ref}`);
+                                                            const data = await res.json();
+                                                            if (data.estado_pago === 'aprobado') {
+                                                                console.log("✅ Pago aprobado confirmado por webhook.");
+                                                                clearInterval(interval);
+                                                                localStorage.removeItem('pending_payment');
+                                                                localStorage.removeItem('external_reference');
+                                                                clearCart();
+                                                                window.location.href = '/'; // Redirige al home
+                                                            }
+                                                        } catch (err) {
+                                                            console.warn("❌ Error al consultar estado de orden:", err);
+                                                        }
+                                                    };
+
+                                                    const interval = setInterval(checkStatus, 3000);
+
+                                                    return true; // Permite continuar el Brick
+                                                }}
+                                                onError={(error) => console.error('❌ Error en Payment Brick:', error)}
+                                            />
+
+                                </motion.div>
+                            </>
                         )}
                     </>
                 )}
