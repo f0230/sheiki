@@ -40,7 +40,7 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, email_cliente 
         total += precio * quantity;
     }
 
-    const costoEnvio = Number(datos_envio.shippingCost) || 0;
+    const costoEnvio = Number(payment.metadata?.shippingCost ?? payment.metadata?.shipping_cost) || 0;
     const envioGratis = total >= 1800 || datos_envio?.tipoEntrega === 'retiro';
     const totalFinal = total + costoEnvio;
 
@@ -116,7 +116,7 @@ export default async function handler(req, res) {
             direccion: payment.metadata?.direccion,
             departamento: payment.metadata?.departamento,
             tipoEntrega: payment.metadata?.tipoEntrega ?? payment.metadata?.tipo_entrega ?? null,
-            shippingCost: payment.metadata?.shippingCost,
+            shippingCost: payment.metadata?.shippingCost ?? payment.metadata?.shipping_cost ?? 0,
         };
 
         console.log('📦 Items desde metadata:', items);

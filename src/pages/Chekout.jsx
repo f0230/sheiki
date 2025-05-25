@@ -176,7 +176,8 @@ const CheckoutPage = () => {
                                     initialization={{
                                         amount: calculateTotal() + shippingCost,
                                         preferenceId,
-                                    }}
+                                    }}  
+                                    locale="es-UY" // ✅ en el lugar correcto
                                     customization={{
                                         paymentMethods: {
                                             ticket: 'all',
@@ -184,7 +185,6 @@ const CheckoutPage = () => {
                                             debitCard: 'all',
                                             mercadoPago: 'all',
                                         },
-                                        locale: 'es-UY' 
                                     }}
                                     onSubmit={async ({ formData }) => {
                                         const orden = {
