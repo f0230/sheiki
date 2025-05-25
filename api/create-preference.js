@@ -51,7 +51,7 @@ export default async function handler(req, res) {
             external_reference: externalReference,
             metadata: {
                 ...shippingData,
-                shippingCost,
+                shippingCost: Number(shippingCost), 
                 items,
                 externalReference,
             },
