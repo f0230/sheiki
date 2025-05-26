@@ -108,7 +108,12 @@ export default async function handler(req, res) {
             return res.status(200).send('Pago no aprobado');
         }
 
-        const externalReference = payment.metadata?.externalReference;
+        // Manejo robusto del externalReference
+        const externalReference =
+            payment.metadata?.externalReference ||
+            payment.metadata?.external_reference ||
+            payment.external_reference || null;
+
         if (!externalReference) {
             console.error('❌ externalReference no definido en metadata');
             return res.status(400).send('externalReference faltante');
@@ -119,12 +124,12 @@ export default async function handler(req, res) {
         const email_cliente = payment.metadata?.email ?? null;
 
         const datos_envio = {
-            nombre: payment.metadata?.nombre,
-            telefono: payment.metadata?.telefono,
-            direccion: payment.metadata?.direccion,
-            departamento: payment.metadata?.departamento,
-            tipoEntrega: payment.metadata?.tipoEntrega ?? payment.metadata?.tipo_entrega ?? null,
-            shippingCost: payment.metadata?.shippingCost ?? 0,
+            nombre: payment.metadata?.nombre || '',
+            telefono: payment.metadata?.telefono || '',
+            direccion: payment.metadata?.direccion || '',
+            departamento: payment.metadata?.departamento || '',
+            tipoEntrega: payment.metadata?.tipoEntrega || payment.metadata?.tipo_entrega || '',
+            shippingCost: payment.metadata?.shippingCost || 0,
             externalReference,
         };
 
