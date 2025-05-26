@@ -163,18 +163,22 @@ const CheckoutPage = () => {
 
         const handleRealtimePaymentUpdate = (message) => {
             console.log(`[Checkout-RT] 🔔 Mensaje Realtime '${message.event}' en canal ${channelName}:`, message.payload);
+
             if (message.payload && message.payload.external_reference === currentExternalRef) {
-                if (message.payload.status === 'approved') {
-                    console.log(`[Checkout-RT] ✅ Pago para ${currentExternalRef} APROBADO vía webhook y Realtime.`);
-                    finalizeCheckout('success', "realtime");
+                const status = message.payload.status;
+                console.log(`[Checkout-RT] 🔔 Estado recibido vía Realtime: ${status}`);
+
+                if (['approved', 'pending', 'in_process'].includes(status)) {
+                    const redirectStatus = status === 'approved' ? 'success' : status;
+                    finalizeCheckout(redirectStatus, "realtime");
                 } else {
-                    console.log(`[Checkout-RT] ⚠️ Actualización de estado no-aprobada (${message.payload.status}) para ${currentExternalRef} vía Realtime.`);
-            // Podrías manejar otros estados si el webhook los envía, ej: finalizeCheckout(message.payload.status, "realtime");
+                    console.log(`[Checkout-RT] ⚠️ Estado no manejado automáticamente: ${status}`);
                 }
             } else {
                 console.log(`[Checkout-RT] Mensaje Realtime ignorado (external_reference no coincide o payload inválido). Esperado: ${currentExternalRef}, Recibido: ${message.payload?.external_reference}`);
             }
         };
+        
 
         realtimeChannel
             .on('broadcast', { event: 'payment_update' }, handleRealtimePaymentUpdate)
