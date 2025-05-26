@@ -42,8 +42,7 @@ export default async function handler(req, res) {
                     quantity: 1,
                 }] : []),
             ],
-       
-            auto_return: 'approved',
+     
             external_reference: externalReference,
             metadata: {
                 ...shippingData,
