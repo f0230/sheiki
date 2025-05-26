@@ -129,7 +129,7 @@ export default async function handler(req, res) {
             direccion: payment.metadata?.direccion || '',
             departamento: payment.metadata?.departamento || '',
             tipoEntrega: payment.metadata?.tipoEntrega || payment.metadata?.tipo_entrega || '',
-            shippingCost: payment.metadata?.shippingCost || 0,
+            shippingCost: Number(payment.metadata?.shippingCost) || 0,
             externalReference,
         };
 
