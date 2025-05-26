@@ -58,7 +58,16 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, email_cliente 
         tipo_entrega: datos_envio.tipoEntrega ?? null,
         costo_envio: costoEnvio,
         envio_gratis: envioGratis,
-        fecha: new Date().toISOString(),
+        fecha: new Date().toLocaleString('es-UY', {
+            timeZone: 'America/Montevideo',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        }),
+        
+        
         external_reference: datos_envio.externalReference ?? null,
     };
 
@@ -130,7 +139,7 @@ export default async function handler(req, res) {
             direccion: payment.metadata?.direccion || '',
             departamento: payment.metadata?.departamento || '',
             tipoEntrega: payment.metadata?.tipoEntrega || payment.metadata?.tipo_entrega || '',
-            shippingCost: Number(payment.metadata?.shippingCost) || 0,
+            shippingCost: isNaN(Number(payment.metadata?.shippingCost)) ? 0 : Number(payment.metadata?.shippingCost),
             externalReference,
         };
 
