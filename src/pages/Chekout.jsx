@@ -6,26 +6,21 @@ import { Payment } from '@mercadopago/sdk-react';
 import SkeletonLoader from '../components/SkeletonLoader';
 import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
+import { supabase } from '../lib/supabaseClient'; // Tu cliente Supabase
 
-// Definición de calcularCostoEnvio (como estaba en tu archivo original Chekout.jsx)
-// Si prefieres usar el de src/utils/envio.js, puedes importarlo.
 const calcularCostoEnvio = ({ tipoEntrega, departamento, total }) => {
     if (total >= 1800) return 0;
     if (!tipoEntrega) return 0;
-
     const tipo = tipoEntrega.toLowerCase();
     const dpto = departamento ? departamento.trim().toLowerCase() : "";
-
     if (tipo === 'retiro') return 0;
     if (tipo === 'agencia') return 180;
-
     if (tipo === 'domicilio') {
         if (dpto === 'paysandú') return 100;
         return 250;
     }
     return 0;
 };
-
 
 const departamentosUY = [
     "Artigas", "Canelones", "Cerro Largo", "Colonia", "Durazno", "Flores",
@@ -36,26 +31,22 @@ const departamentosUY = [
 const CheckoutPage = () => {
     const navigate = useNavigate();
     const { items, clearCart } = useCart();
-    
+
     const calculateTotal = useCallback(() => {
         return items.reduce((total, item) => total + item.precio * item.quantity, 0);
     }, [items]);
 
     const [shippingData, setShippingData] = useState({
-        nombre: '',
-        telefono: '',
-        email: '',
-        departamento: '',
-        direccion: '',
-        tipoEntrega: '',
+        nombre: '', telefono: '', email: '', departamento: '', direccion: '', tipoEntrega: '',
     });
-
     const [shippingCost, setShippingCost] = useState(0);
     const [confirmed, setConfirmed] = useState(false);
     const [preferenceId, setPreferenceId] = useState(null);
-    const [loading, setLoading] = useState(false); // Para la creación de la preferencia
+    const [currentExternalRef, setCurrentExternalRef] = useState(null);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [paymentProcessingInOtherTab, setPaymentProcessingInOtherTab] = useState(false);
+    const [paymentProcessing, setPaymentProcessing] = useState(false);
+    const [isCheckoutFinalized, setIsCheckoutFinalized] = useState(false);
 
     const isEmailValid = shippingData.email.includes('@') && shippingData.email.includes('.');
     const isFormValid = Object.values({
@@ -63,10 +54,9 @@ const CheckoutPage = () => {
         telefono: shippingData.telefono,
         email: shippingData.email,
         departamento: shippingData.departamento,
-        // Dirección puede ser opcional si es retiro en agencia/local, ajusta según tu lógica
-        direccion: shippingData.tipoEntrega === 'domicilio' ? shippingData.direccion : 'N/A', 
+        direccion: shippingData.tipoEntrega === 'domicilio' ? shippingData.direccion : 'N/A',
         tipoEntrega: shippingData.tipoEntrega
-    }).every(value => value && value.trim() !== '') && isEmailValid;
+    }).every(value => value && String(value).trim() !== '') && isEmailValid;
 
     useEffect(() => {
         const totalActual = calculateTotal();
@@ -80,15 +70,12 @@ const CheckoutPage = () => {
 
     useEffect(() => {
         const generarPreferencia = async () => {
-            if (!confirmed || items.length === 0) {
-                if (items.length === 0 && confirmed) {
-                    setError("Tu carrito está vacío. Agrega productos antes de pagar.");
-                    setConfirmed(false); 
-                }
-                return;
-            }
+            if (!confirmed || items.length === 0 || loading || preferenceId) return; // Evitar regenerar si ya hay preferenceId
+            console.log("[Checkout] Iniciando generación de preferencia...");
             setLoading(true);
-            setError(null); 
+            setError(null);
+            setCurrentExternalRef(null); // Limpiar ref anterior
+
             try {
                 const res = await fetch('/api/create-preference', {
                     method: 'POST',
@@ -96,85 +83,135 @@ const CheckoutPage = () => {
                     body: JSON.stringify({ items, shippingData, shippingCost }),
                 });
                 const data = await res.json();
+                console.log("[Checkout] Respuesta de /api/create-preference:", data);
+
                 if (res.ok && data.preference && data.preference.id) {
                     setPreferenceId(data.preference.id);
+                    if (data.preference.external_reference) {
+                        setCurrentExternalRef(data.preference.external_reference);
+                        console.log(`[Checkout] ✅ Preferencia y external_reference (${data.preference.external_reference}) establecidos.`);
+                    } else {
+                        console.error("[Checkout] ❌ ERROR: data.preference.external_reference está ausente en la respuesta de la API.");
+                        setError("Error al obtener la referencia para el seguimiento del pago.");
+                    }
                 } else {
-                    throw new Error(data.error || data.message || 'Preferencia no generada correctamente');
+                    throw new Error(data.error || data.details || data.message || 'Respuesta inválida al crear preferencia');
                 }
             } catch (err) {
                 setError(err.message || 'No se pudo generar la preferencia de pago.');
-                console.error('❌ Error al crear preferencia:', err);
-                setConfirmed(false); 
+                console.error('[Checkout] ❌ Error al crear preferencia en frontend:', err);
+                setConfirmed(false); // Permitir reintento
             } finally {
                 setLoading(false);
             }
         };
 
-        if (confirmed) {
+        if (confirmed && !preferenceId) {
             generarPreferencia();
         }
-    }, [confirmed, items, shippingData, shippingCost]);
+    }, [confirmed, items, shippingData, shippingCost, loading, preferenceId]); // Dependencias
 
+    const finalizeCheckout = useCallback((status, fromSource = "unknown") => {
+        if (isCheckoutFinalized) {
+            console.log(`[Checkout] Intento de finalizar checkout ya finalizado (desde ${fromSource}). Estado: ${status}`);
+            return;
+        }
+        console.log(`[Checkout] Finalizando checkout con estado: ${status} (desde ${fromSource})`);
+        setIsCheckoutFinalized(true);
+
+        setPaymentProcessing(false);
+        setPreferenceId(null);
+        // No limpiar currentExternalRef aquí inmediatamente si la suscripción Realtime aún podría estar limpiándose.
+        // Se limpiará al desmontar el efecto de Realtime o si se reinicia el flujo.
+        setConfirmed(false);
+        clearCart();
+
+        // Redirigir según el estado
+        if (status === 'success') navigate('/success', { replace: true });
+        else if (status === 'failure') navigate('/failure', { replace: true });
+        else if (status === 'pending') navigate('/pending', { replace: true });
+        else navigate('/', { replace: true }); // Fallback a la home
+
+    }, [isCheckoutFinalized, clearCart, navigate]);
+
+    // Listener para localStorage
     useEffect(() => {
+        if (isCheckoutFinalized) return;
         const handleStorageChange = (event) => {
             if (event.key === 'sheikiPaymentStatus' && event.newValue) {
                 const status = event.newValue;
-                localStorage.removeItem('sheikiPaymentStatus'); 
+                localStorage.removeItem('sheikiPaymentStatus');
+                finalizeCheckout(status, "localStorage");
+            }
+        };
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
+    }, [finalizeCheckout, isCheckoutFinalized]);
 
-                setPaymentProcessingInOtherTab(false);
-                setPreferenceId(null);
-                setConfirmed(false);
+    // Listener para Supabase Realtime
+    useEffect(() => {
+        if (isCheckoutFinalized || !paymentProcessing || !currentExternalRef) {
+            // console.log(`[Checkout-RT] No se suscribe. Finalized: ${isCheckoutFinalized}, Processing: ${paymentProcessing}, Ref: ${currentExternalRef}`);
+            return;
+        }
 
-                if (status === 'success') {
-                    clearCart();
-                    // Considera no mostrar alert y en su lugar, la página SuccessPage o PendingPage ya es suficiente
-                    // O una notificación más integrada si la pestaña original sigue activa y visible.
-                    // alert("¡Pago completado exitosamente! Tu orden está siendo procesada.");
-                    navigate('/success', { replace: true }); 
-                } else if (status === 'failure') {
-                    // setError("El pago falló o fue cancelado en la otra pestaña.");
-                    navigate('/failure', { replace: true });
-                } else if (status === 'pending') {
-                    // setError("El pago está pendiente de confirmación.");
-                    navigate('/pending', { replace: true });
+        const channelName = `order_status_${currentExternalRef}`;
+        console.log(`[Checkout-RT] Intentando suscribir al canal: ${channelName}`);
+        const realtimeChannel = supabase.channel(channelName, {
+            config: { broadcast: { self: false } }
+        });
+
+        const handleRealtimePaymentUpdate = (message) => {
+            console.log(`[Checkout-RT] 🔔 Mensaje Realtime '${message.event}' en canal ${channelName}:`, message.payload);
+            if (message.payload && message.payload.external_reference === currentExternalRef) {
+                if (message.payload.status === 'approved') {
+                    console.log(`[Checkout-RT] ✅ Pago para ${currentExternalRef} APROBADO vía webhook y Realtime.`);
+                    finalizeCheckout('success', "realtime");
+                } else {
+                    console.log(`[Checkout-RT] ⚠️ Actualización de estado no-aprobada (${message.payload.status}) para ${currentExternalRef} vía Realtime.`);
+                    // Podrías manejar otros estados si el webhook los envía, ej: finalizeCheckout(message.payload.status, "realtime");
                 }
+            } else {
+                console.log(`[Checkout-RT] Mensaje Realtime ignorado (external_reference no coincide o payload inválido). Esperado: ${currentExternalRef}, Recibido: ${message.payload?.external_reference}`);
             }
         };
 
-        window.addEventListener('storage', handleStorageChange);
+        realtimeChannel
+            .on('broadcast', { event: 'payment_update' }, handleRealtimePaymentUpdate)
+            .subscribe((status, err) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log(`[Checkout-RT] 🔌 Suscrito exitosamente al canal: ${channelName}`);
+                } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                    console.error(`[Checkout-RT] ❌ Error/Estado de canal Realtime (${channelName} - ${status}):`, err);
+                    // Considerar lógica de reintento o notificación al usuario si la suscripción falla persistentemente
+                    setError("No se pudo conectar para actualizaciones de pago en tiempo real. Por favor, verifica tu confirmación de pago manualmente.");
+                    setPaymentProcessing(false); // Para que el usuario no se quede "colgado"
+                }
+            });
+
         return () => {
-            window.removeEventListener('storage', handleStorageChange);
+            if (realtimeChannel) {
+                console.log(`[Checkout-RT] 🔌 Desuscribiendo del canal Realtime: ${channelName}`);
+                supabase.removeChannel(realtimeChannel)
+                    .then(status => console.log(`[Checkout-RT] Estado de desuscripción: ${status}`))
+                    .catch(removeErr => console.error("[Checkout-RT] Error al remover canal Realtime:", removeErr));
+            }
         };
-    }, [clearCart, navigate]);
+    }, [paymentProcessing, currentExternalRef, supabase, finalizeCheckout, isCheckoutFinalized]);
 
     const handlePaymentSubmit = useCallback(async () => {
-        localStorage.setItem('datos_envio', JSON.stringify({
-            ...shippingData,
-            shippingCost: Number(shippingCost), // Asegurar que sea número
-        }));
+        if (isCheckoutFinalized) return false;
+        console.log("[Checkout] handlePaymentSubmit llamado.");
+        localStorage.setItem('datos_envio', JSON.stringify({ ...shippingData, shippingCost: Number(shippingCost) }));
         localStorage.setItem('items_comprados', JSON.stringify(items));
-        
-        // Si el redirectMode es 'blank' o si MP fuerza una nueva pestaña para ciertos métodos,
-        // este estado ayudará a la UI de la pestaña original.
-        setPaymentProcessingInOtherTab(true); 
-        return true; // Es importante retornar true para que MP proceda.
-    }, [shippingData, shippingCost, items]);
+        setPaymentProcessing(true);
+        // La suscripción a Realtime se activará por el useEffect que depende de `paymentProcessing` y `currentExternalRef`
+        return true;
+    }, [shippingData, shippingCost, items, isCheckoutFinalized]);
 
 
-    if (paymentProcessingInOtherTab && !preferenceId) { 
-        // Si estamos esperando el pago en otra pestaña Y ya no tenemos preferenceId (porque fue consumido o reseteado)
-        // esto puede significar que la página fue refrescada o el estado se perdió.
-        // En este caso, es mejor mostrar el checkout normal o un mensaje de error.
-        // Para simplificar, vamos a resetear el estado si preferenceId se pierde aquí.
-        // Esto es una heurística, un manejo más robusto implicaría persistir preferenceId si es necesario.
-        // if (!preferenceId) setPaymentProcessingInOtherTab(false); 
-        // Por ahora, si entramos aquí sin preferenceId, volvemos al flujo normal.
-        // No haremos esto para no interrumpir el flujo si el usuario refresca la página de espera.
-    }
-
-
-    if (paymentProcessingInOtherTab) { // Mantenemos esta pantalla mientras el usuario está en la otra pestaña
-        return (
+    if (paymentProcessing) {
+        return ( /* ... UI de "Procesando pago..." ... */
             <div className="text-white font-product min-h-screen">
                 <Header />
                 <main className="max-w-[1440px] mx-auto px-4 py-12 mt-10 md:mt-12 flex flex-col items-center justify-center text-center min-h-[calc(100vh-200px)]">
@@ -183,11 +220,12 @@ const CheckoutPage = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         className="bg-white text-black p-8 rounded-lg shadow-xl"
                     >
-                        <h2 className="text-2xl font-bold mb-4">Procesando tu pago...</h2>
-                        <p className="mb-2">Has sido o serás redirigido a Mercado Pago para completar tu compra.</p>
-                        <p className="mb-6">Si se abrió una nueva pestaña, por favor completa el pago allí. Una vez finalizado, esta página podría actualizarse o puedes navegar a la página de confirmación.</p>
+                        <h2 className="text-2xl font-bold mb-4">Procesando tu pago</h2>
+                        <p className="mb-2">Podrías ser redirigido a Mercado Pago para completar tu compra.</p>
+                        <p className="mb-6">Si se abrió una nueva pestaña, por favor completa el pago allí. Esta página se actualizará automáticamente.</p>
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
                         <p className="text-sm text-gray-600 mt-4">Aguardando confirmación del pago...</p>
+                        {currentExternalRef && <p className="text-xs text-gray-400 mt-2">Ref: {currentExternalRef}</p>}
                     </motion.div>
                 </main>
                 <Footer />
@@ -195,7 +233,7 @@ const CheckoutPage = () => {
         );
     }
 
-    return (
+    return ( /* ... JSX del formulario, resumen y Payment Brick ... */
         <div className="text-white font-product min-h-screen">
             <Header />
             <main className="max-w-[1440px] mx-auto px-4 py-12 mt-10 md:mt-12">
@@ -217,7 +255,7 @@ const CheckoutPage = () => {
                             transition={{ duration: 0.4 }}
                         >
                             <h2 className="text-xl font-semibold mb-4">Datos de envío</h2>
-                            <fieldset disabled={confirmed} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <fieldset disabled={confirmed || paymentProcessing} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <input type="text" placeholder="Nombre completo" value={shippingData.nombre} onChange={e => setShippingData({ ...shippingData, nombre: e.target.value })} className="border p-2 rounded disabled:bg-gray-100" />
                                 <input type="email" placeholder="Email" value={shippingData.email} onChange={e => setShippingData({ ...shippingData, email: e.target.value })} className="border p-2 rounded disabled:bg-gray-100" />
                                 <input type="tel" placeholder="Teléfono" value={shippingData.telefono} onChange={e => setShippingData({ ...shippingData, telefono: e.target.value })} className="border p-2 rounded disabled:bg-gray-100" />
@@ -225,7 +263,7 @@ const CheckoutPage = () => {
                                     <option value="">Seleccionar departamento</option>
                                     {departamentosUY.map(dep => <option key={dep} value={dep}>{dep}</option>)}
                                 </select>
-                                <input type="text" placeholder="Dirección (si aplica)" value={shippingData.direccion} onChange={e => setShippingData({ ...shippingData, direccion: e.target.value })} className="border p-2 rounded disabled:bg-gray-100" disabled={shippingData.tipoEntrega !== 'domicilio'}/>
+                                <input type="text" placeholder="Dirección (si aplica)" value={shippingData.direccion} onChange={e => setShippingData({ ...shippingData, direccion: e.target.value })} className="border p-2 rounded disabled:bg-gray-100" disabled={shippingData.tipoEntrega !== 'domicilio'} />
                                 <select value={shippingData.tipoEntrega} onChange={e => setShippingData({ ...shippingData, tipoEntrega: e.target.value })} className="border p-2 rounded col-span-1 md:col-span-2 disabled:bg-gray-100">
                                     <option value="">Tipo de entrega</option>
                                     <option value="domicilio">A domicilio</option>
@@ -237,16 +275,11 @@ const CheckoutPage = () => {
                                 <button
                                     className={`mt-6 px-4 py-2 rounded font-bold transition-colors ${isFormValid && items.length > 0 ? 'bg-black text-white hover:bg-gray-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
                                     onClick={() => {
-                                        if (isFormValid && items.length > 0) {
-                                            setConfirmed(true);
-                                            setError(null); // Limpiar errores al confirmar
-                                        } else if (items.length === 0) {
-                                            setError("Tu carrito está vacío. Agrega productos antes de continuar.");
-                                        } else {
-                                            setError("Por favor, completa todos los campos de envío requeridos.");
-                                        }
+                                        if (isFormValid && items.length > 0) { setConfirmed(true); setError(null); }
+                                        else if (items.length === 0) { setError("Tu carrito está vacío. Agrega productos antes de continuar."); }
+                                        else { setError("Por favor, completa todos los campos de envío requeridos."); }
                                     }}
-                                    disabled={!isFormValid || items.length === 0}
+                                    disabled={!isFormValid || items.length === 0 || paymentProcessing}
                                 >
                                     Confirmar datos y generar pago
                                 </button>
@@ -254,14 +287,9 @@ const CheckoutPage = () => {
                             {confirmed && !preferenceId && !loading && ( // Botón para editar datos si ya confirmó pero aún no hay preferencia
                                 <button
                                     className="mt-4 ml-2 px-4 py-2 rounded font-bold bg-gray-200 text-black hover:bg-gray-300 transition-colors"
-                                    onClick={() => {
-                                        setConfirmed(false);
-                                        setPreferenceId(null); // Asegurarse de limpiar la preferencia si se editan datos
-                                        setError(null);
-                                    }}
-                                >
-                                    Editar Datos
-                                </button>
+                                    onClick={() => { setConfirmed(false); setPreferenceId(null); setCurrentExternalRef(null); setError(null); }} // Limpiar también currentExternalRef
+                                    disabled={paymentProcessing}
+                                > Editar Datos </button>
                             )}
                         </motion.div>
 
@@ -289,7 +317,7 @@ const CheckoutPage = () => {
                                         </div>
                                         <div className="mt-2 flex justify-between">
                                             <span className="font-semibold">Envío:</span>
-                                            <span>{shippingCost === 0 && calculateTotal() >= 1800 ? 'Gratis (compra > $1800)' : shippingCost === 0 && (shippingData.tipoEntrega === 'retiro' || shippingData.tipoEntrega === 'agencia') ? 'Gratis' : shippingCost > 0 ? `$${shippingCost}` : 'A calcular'}</span>
+                                            <span>{shippingCost === 0 && calculateTotal() >= 1800 ? 'Gratis (compra > $1800)' : shippingCost === 0 && (shippingData.tipoEntrega === 'retiro') ? 'Gratis (Retiro)' : shippingCost === 0 && (shippingData.tipoEntrega === 'agencia') ? 'Gratis (Agencia)' : shippingCost > 0 ? `$${shippingCost}` : 'A calcular'}</span>
                                         </div>
                                         <div className="mt-2 flex justify-between text-lg font-bold">
                                             <span>Total final:</span>
@@ -304,15 +332,10 @@ const CheckoutPage = () => {
                     </>
                 )}
 
-                {loading && (
-                    <div className="flex flex-col items-center justify-center bg-white text-black p-6 rounded-lg mt-8">
-                        <SkeletonLoader lines={1} />
-                        <p className="mt-4 text-lg">Generando tu orden de pago...</p>
-                    </div>
-                )}
+                {loading && <div className="flex flex-col items-center justify-center bg-white text-black p-6 rounded-lg mt-8"> <SkeletonLoader lines={1} /> <p className="mt-4 text-lg">Generando tu orden de pago...</p> </div>}
 
                 {error && (
-                     <motion.div
+                    <motion.div
                         className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative my-6"
                         role="alert"
                         initial={{ opacity: 0, y: 10 }}
@@ -321,13 +344,7 @@ const CheckoutPage = () => {
                         <strong className="font-bold">Error: </strong>
                         <span className="block sm:inline">{error}</span>
                         <button
-                            onClick={() => { 
-                                setError(null); 
-                                // No resetear `confirmed` aquí automáticamente, 
-                                // el usuario podría querer reintentar generar la preferencia o editar datos.
-                                // Si el error es por preferencia, `confirmed` sigue true y se reintenta.
-                                // Si es por validación, el botón de confirmar ya lo maneja.
-                            }}
+                            onClick={() => { setError(null); }}
                             className="absolute top-0 bottom-0 right-0 px-4 py-3"
                         >
                             <span className="text-2xl">×</span>
@@ -344,48 +361,39 @@ const CheckoutPage = () => {
                     >
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-xl font-semibold">Completa tu pago</h2>
-                            <button
-                                onClick={() => {
-                                    setConfirmed(false);
-                                    setPreferenceId(null);
-                                    setError(null);
-                                }}
+                            <button onClick={() => { setConfirmed(false); setPreferenceId(null); setCurrentExternalRef(null); setError(null); }}
                                 className="text-sm text-blue-600 hover:underline"
-                            >
+                                disabled={paymentProcessing}>
                                 Editar datos de envío
                             </button>
                         </div>
                         <Payment
-                            key={preferenceId} 
+                            key={preferenceId} // Forzar re-render si preferenceId cambia
                             initialization={{
                                 amount: calculateTotal() + shippingCost,
                                 preferenceId: preferenceId,
                             }}
                             customization={{
-                                paymentMethods: {
-                                    ticket: 'all',
-                                    creditCard: 'all',
-                                    debitCard: 'all',
-                                    mercadoPago: 'all',
-                                },
-                                redirectMode: 'self', // Intentar siempre que sea en la misma pestaña
+                                paymentMethods: { ticket: 'all', creditCard: 'all', debitCard: 'all', mercadoPago: 'all', },
+                                redirectMode: 'self',
                             }}
                             onSubmit={handlePaymentSubmit}
                             onError={(mpError) => {
-                                console.error('❌ Error en Payment Brick:', mpError);
+                                console.error('[Checkout] ❌ Error en Payment Brick:', mpError);
                                 setError('Error al iniciar el pago con Mercado Pago. Por favor, intenta de nuevo o edita tus datos.');
-                                setPreferenceId(null); // Limpiar para re-generar si editan datos
-                                setConfirmed(true); // Mantener confirmado para que se pueda reintentar generar preferencia
-                                setPaymentProcessingInOtherTab(false);
+                                setPreferenceId(null);
+                                setCurrentExternalRef(null);
+                                setPaymentProcessing(false);
+                                // Mantener `confirmed` como true para que el usuario pueda reintentar generar la preferencia o editar datos.
                             }}
-                            onReady={() => console.log("Brick de Mercado Pago listo.")}
+                            onReady={() => console.log("[Checkout] Brick de Pago de Mercado Pago listo.")}
                         />
                     </motion.div>
                 )}
-                 {items.length === 0 && !error && !loading && (
+                {items.length === 0 && !error && !loading && (
                     <p className="text-center mt-8">
-                        Tu carrito está vacío. Visita nuestra página de productos para agregar items.
-                        <Link to="/producto" className="text-blue-500 hover:underline ml-2">
+                        Tu carrito está vacío.
+                        <Link to="/producto" className="text-blue-500 hover:underline ml-1">
                             Ir a productos
                         </Link>
                     </p>

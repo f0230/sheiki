@@ -1,141 +1,199 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
+const supabaseAdmin = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const procesarOrden = async ({ items, estado_pago, email_usuario, email_cliente = null, id_usuario = null, datos_envio }) => {
-    let total = 0;
+const procesarOrdenYNotificar = async ({
+    items_metadata,
+    estado_pago,
+    email_pagador,
+    datos_envio,
+    external_reference,
+    payment_id,
+    monto_total_pagado,
+    fecha_aprobacion_pago // Fecha en que MP aprobó el pago
+}) => {
+    console.log(`[webhook-procesar] Iniciando procesamiento para orden: ${external_reference}, pago ID: ${payment_id}`);
+    let totalCalculadoItems = 0;
 
-    for (const item of items) {
-        const { id, color, talle, quantity, precio = item.unit_price } = item;
+    // 1. Actualizar stock y calcular total (basado en items_metadata)
+    for (const item of items_metadata) {
+        const { product_ref_id, color, size, qty, unit_val } = item;
 
-        const { data: variante, error: fetchError } = await supabase
+        const { data: variante, error: fetchError } = await supabaseAdmin
             .from('variantes')
-            .select('*')
-            .eq('producto_id', id)
+            .select('id, stock')
+            .eq('producto_id', product_ref_id)
             .eq('color', color)
-            .eq('talle', talle)
+            .eq('talle', size)
             .single();
 
         if (fetchError || !variante) {
-            console.error('⚠️ Variante no encontrada:', { id, color, talle });
+            console.error(`[webhook-procesar] ⚠️ Variante no encontrada para ${external_reference}:`, { product_ref_id, color, size, fetchError });
             continue;
         }
 
-        const nuevoStock = Math.max(variante.stock - quantity, 0);
-
-        const { error: updateError } = await supabase
+        const nuevoStock = Math.max(Number(variante.stock) - Number(qty), 0);
+        const { error: updateError } = await supabaseAdmin
             .from('variantes')
             .update({ stock: nuevoStock })
             .eq('id', variante.id);
 
         if (updateError) {
-            console.error('❌ Error actualizando stock:', updateError);
+            console.error(`[webhook-procesar] ❌ Error actualizando stock para var. ${variante.id} (orden ${external_reference}):`, updateError);
         } else {
-            console.log(`✅ Stock actualizado: variante ID ${variante.id}`);
+            console.log(`[webhook-procesar] ✅ Stock actualizado para var. ${variante.id} (orden ${external_reference})`);
         }
-
-        total += precio * quantity;
+        totalCalculadoItems += Number(unit_val) * Number(qty);
     }
 
-    const costoEnvio = Number(datos_envio.shippingCost) || 0;
-    const envioGratis = total >= 1800 || datos_envio?.tipoEntrega === 'retiro';
-    const totalFinal = total + costoEnvio;
+    const costoEnvio = Number(datos_envio?.calculated_shipping_cost) || 0;
+    const envioGratis = totalCalculadoItems >= 1800 || datos_envio?.tipoEntrega?.toLowerCase() === 'retiro';
 
     const orden = {
-        id_usuario,
-        email_usuario,
-        email_cliente,
-        items_comprados: items,
-        total: totalFinal,
-        estado_pago,
-        nombre: datos_envio.nombre ?? null,
-        telefono: datos_envio.telefono ?? null,
-        direccion: datos_envio.direccion ?? null,
-        departamento: datos_envio.departamento ?? null,
-        tipo_entrega: datos_envio.tipoEntrega ?? null,
+        external_reference: external_reference,
+        payment_id: payment_id,
+        email_cliente: email_pagador,
+        items_comprados: items_metadata,
+        total: Number(monto_total_pagado),
+        estado_pago: estado_pago,
+        nombre_cliente: datos_envio?.nombre ?? null,
+        telefono_cliente: datos_envio?.telefono ?? null,
+        direccion_envio: datos_envio?.direccion ?? null,
+        departamento_envio: datos_envio?.departamento ?? null,
+        tipo_entrega: datos_envio?.tipoEntrega ?? null,
         costo_envio: costoEnvio,
         envio_gratis: envioGratis,
-        fecha: new Date().toISOString(),
+        fecha_creacion: new Date().toISOString(), // Hora del webhook
+        fecha_pago_aprobado: fecha_aprobacion_pago ? new Date(fecha_aprobacion_pago).toISOString() : new Date().toISOString(),
     };
 
-    console.log('📝 Guardando orden en Supabase:', orden);
+    console.log(`[webhook-procesar] 📝 Guardando orden en Supabase (${external_reference}):`, orden);
+    const { data: insertedOrder, error: insertError } = await supabaseAdmin
+        .from('ordenes')
+        .insert([orden])
+        .select('id') // Solo el ID si es lo único que necesitas
+        .single();
 
-    const { error: insertError } = await supabase.from('ordenes').insert([orden]);
     if (insertError) {
-        console.error('❌ Error al guardar orden:', insertError);
+        console.error(`[webhook-procesar] ❌ Error al guardar orden ${external_reference} en Supabase:`, insertError);
+        // Considera no enviar notificación Realtime si la orden no se pudo guardar
+        return;
     } else {
-        console.log('✅ Orden guardada correctamente.');
+        console.log(`[webhook-procesar] ✅ Orden ${external_reference} guardada. ID interno: ${insertedOrder?.id}`);
+    }
+
+    // 2. Enviar notificación por Supabase Realtime
+    if (estado_pago === 'aprobado' && external_reference) {
+        const channelName = `order_status_${external_reference}`;
+        const messagePayload = {
+            type: 'broadcast',
+            event: 'payment_update',
+            payload: {
+                external_reference: external_reference,
+                status: 'approved',
+                message: 'Pago aprobado y procesado por webhook.',
+                order_id_interno: insertedOrder?.id // Opcional: enviar ID interno
+            },
+        };
+        try {
+            console.log(`[webhook-procesar] 📡 Intentando enviar mensaje Realtime a canal ${channelName} con payload:`, messagePayload);
+            const { error: realtimeError } = await supabaseAdmin.channel(channelName).send(messagePayload);
+
+            if (realtimeError) {
+                console.error(`[webhook-procesar] ❌ Error enviando notificación Supabase Realtime para ${channelName}:`, realtimeError);
+            } else {
+                console.log(`[webhook-procesar] ✅ Notificación Realtime enviada para ${channelName}`);
+            }
+        } catch (err) {
+            console.error(`[webhook-procesar] ❌ Excepción al enviar notificación Supabase Realtime para ${channelName}:`, err);
+        }
     }
 };
 
 export default async function handler(req, res) {
-    console.log('🔥 Webhook disparado');
+    console.log('[webhook] 🔥 Webhook de Mercado Pago recibido.');
     if (req.method !== 'POST') {
-        console.warn('🚫 Método no permitido:', req.method);
-        return res.status(405).send('Método no permitido');
+        console.warn('[webhook] 🚫 Método no permitido:', req.method);
+        return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
     try {
-        console.log('🔔 Webhook recibido:', JSON.stringify(req.body, null, 2));
+        const body = req.body;
+        console.log('[webhook] 🔔 Cuerpo del webhook:', JSON.stringify(body, null, 2));
 
-        const { type, data } = req.body;
+        const { type, data, action } = body;
 
         if (type !== 'payment' || !data?.id) {
-            console.warn('⚠️ Evento ignorado o sin ID válido');
-            return res.status(200).send('Evento ignorado');
+            console.warn('[webhook] ⚠️ Evento ignorado (tipo no es "payment" o falta data.id):', type);
+            return res.status(200).json({ message: 'Evento ignorado o no relevante.' });
         }
 
-        console.log('📥 Buscando información de pago ID:', data.id);
+        // Puedes ser más específico con la acción si es necesario, ej:
+        // if (action !== 'payment.updated' && action !== 'payment.created') {
+        //     console.warn(`[webhook] ⚠️ Acción de evento ignorada: ${action}`);
+        //     return res.status(200).json({ message: `Acción ${action} ignorada.` });
+        // }
 
-        const response = await fetch(`https://api.mercadopago.com/v1/payments/${data.id}`, {
+        const paymentId = data.id;
+        console.log(`[webhook] 📥 Obteniendo detalles del pago ID: ${paymentId} desde Mercado Pago.`);
+        const paymentResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
             headers: {
-                Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+                'Authorization': `Bearer ${process.env.MP_ACCESS_TOKEN}`,
                 'Content-Type': 'application/json',
             },
         });
 
-        const payment = await response.json();
-
-        console.log('📄 Detalles del pago:', payment);
-
-        if (!payment || payment.status !== 'approved') {
-            console.warn('⚠️ Pago no aprobado o no encontrado');
-            return res.status(200).send('Pago no aprobado');
+        if (!paymentResponse.ok) {
+            const errorText = await paymentResponse.text();
+            console.error(`[webhook] ❌ Error obteniendo detalles del pago ${paymentId} de MP: ${paymentResponse.status}`, errorText);
+            return res.status(paymentResponse.status).json({ error: `Error de API Mercado Pago al obtener pago: ${errorText}` });
         }
 
-        const items = payment.metadata?.items || [];
-        const email_usuario = payment.payer?.email ?? null;
-        const email_cliente = payment.metadata?.email ?? null;
+        const payment = await paymentResponse.json();
+        console.log(`[webhook] 📄 Detalles completos del pago ${paymentId}:`, JSON.stringify(payment, null, 2));
 
-        const datos_envio = {
-            nombre: payment.metadata?.nombre,
-            telefono: payment.metadata?.telefono,
-            direccion: payment.metadata?.direccion,
-            departamento: payment.metadata?.departamento,
-            tipoEntrega: payment.metadata?.tipoEntrega ?? payment.metadata?.tipo_entrega ?? null,
-            shippingCost: payment.metadata?.shippingCost ?? payment.metadata?.shipping_cost ?? 0,
-        };
+        const externalRef = payment.external_reference;
+        const paymentStatus = payment.status;
+        const dateApproved = payment.date_approved;
 
-        console.log('📦 Items desde metadata:', items);
-        console.log('📧 Email usuario:', email_usuario);
-        console.log('📫 Datos de envío:', datos_envio);
+        if (paymentStatus === 'approved' && externalRef) {
+            console.log(`[webhook] ✅ Pago ${paymentId} (orden ${externalRef}) APROBADO. Iniciando procesamiento.`);
 
-        await procesarOrden({
-            items,
-            estado_pago: 'aprobado',
-            email_usuario,
-            email_cliente,
-            datos_envio,
-        });
+            const items_from_metadata = payment.metadata?.app_user_cart_items || [];
+            const email_pagador = payment.payer?.email;
+            const datos_envio_from_metadata = payment.metadata?.app_shipping_details || {};
 
-        console.log('✅ Orden procesada y stock actualizado desde webhook.');
+            if (items_from_metadata.length === 0) {
+                console.warn(`[webhook] ⚠️ No se encontraron items en metadata (app_user_cart_items) para la orden ${externalRef}. Pago ID: ${paymentId}`);
+                // Aquí podrías intentar obtenerlos de `payment.additional_info.items` como fallback
+                // const fallbackItems = payment.additional_info?.items?.map(item => ({...}));
+            }
 
-        return res.status(200).send('Orden procesada desde webhook');
+            await procesarOrdenYNotificar({
+                items_metadata,
+                estado_pago: 'aprobado',
+                email_pagador,
+                datos_envio: datos_envio_from_metadata,
+                external_reference: externalRef,
+                payment_id: paymentId,
+                monto_total_pagado: payment.transaction_amount,
+                fecha_aprobacion_pago: dateApproved,
+            });
+
+            console.log(`[webhook] 🚀 Orden ${externalRef} procesada completamente desde webhook.`);
+        } else {
+            console.warn(`[webhook] ⚠️ Pago ${paymentId} NO aprobado o SIN external_reference. Estado: ${paymentStatus}, ExternalRef: ${externalRef}. No se procesa la orden.`);
+            // Considera enviar una notificación Realtime para otros estados si es útil para el frontend
+            // if (externalRef) { /* Enviar mensaje Realtime con estado paymentStatus */ }
+        }
+
+        return res.status(200).json({ message: 'Webhook recibido y procesado según estado.' });
+
     } catch (err) {
-        console.error('❌ Error en webhook:', err);
-        return res.status(500).send('Error procesando webhook');
+        console.error('[webhook] ❌ Error crítico en el handler del webhook:', err.message, err.stack);
+        return res.status(500).json({ error: 'Error interno del servidor al procesar el webhook.' });
     }
 }
