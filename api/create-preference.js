@@ -42,11 +42,7 @@ export default async function handler(req, res) {
                     quantity: 1,
                 }] : []),
             ],
-            back_urls: {
-                success: 'https://sheiki.uy/success',
-                failure: 'https://sheiki.uy/failure',
-                pending: 'https://sheiki.uy/pending',
-            },
+       
             auto_return: 'approved',
             external_reference: externalReference,
             metadata: {
