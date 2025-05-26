@@ -136,7 +136,9 @@ const ProductPage = () => {
   
 
   const coloresDisponibles = [...new Set(variantes.map(v => v.color))];
-  const tallesDisponibles = selectedColor ? [...new Set(variantes.filter(v => v.color === selectedColor).map(v => v.talle))] : [];
+  const tallesDisponibles = selectedColor
+    ? [...new Set(variantes.filter(v => v.color === selectedColor).map(v => v.talle))].sort((a, b) => a - b)
+    : [];
   const imagenesSeleccionadas = imagenesPorColor.filter(img => img.color === selectedColor);
 
   useEffect(() => {

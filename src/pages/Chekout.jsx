@@ -238,9 +238,9 @@ const CheckoutPage = () => {
     }
 
     return ( /* ... JSX del formulario, resumen y Payment Brick ... */
-        <div className="text-white font-product min-h-screen">
+        <div className=" min-h-screen max-w-[1080px] mx-auto">
             <Header />
-            <main className="max-w-[1440px] mx-auto px-4 py-12 mt-10 md:mt-12">
+            <main className=" mx-auto px-4 py-12 mt-10 md:mt-12">
                 <motion.h1
                     className="text-3xl font-bold mb-6"
                     initial={{ opacity: 0, y: -20 }}
@@ -258,7 +258,7 @@ const CheckoutPage = () => {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4 }}
                         >
-                            <h2 className="text-xl font-semibold mb-4">Datos de envío</h2>
+                            <h2 className="text-xl mb-4">Datos de envío</h2>
                             <fieldset disabled={confirmed || paymentProcessing} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <input type="text" placeholder="Nombre completo" value={shippingData.nombre} onChange={e => setShippingData({ ...shippingData, nombre: e.target.value })} className="border p-2 rounded disabled:bg-gray-100" />
                                 <input type="email" placeholder="Email" value={shippingData.email} onChange={e => setShippingData({ ...shippingData, email: e.target.value })} className="border p-2 rounded disabled:bg-gray-100" />
@@ -267,13 +267,14 @@ const CheckoutPage = () => {
                                     <option value="">Seleccionar departamento</option>
                                     {departamentosUY.map(dep => <option key={dep} value={dep}>{dep}</option>)}
                                 </select>
-                                <input type="text" placeholder="Dirección (si aplica)" value={shippingData.direccion} onChange={e => setShippingData({ ...shippingData, direccion: e.target.value })} className="border p-2 rounded disabled:bg-gray-100" disabled={shippingData.tipoEntrega !== 'domicilio'} />
-                                <select value={shippingData.tipoEntrega} onChange={e => setShippingData({ ...shippingData, tipoEntrega: e.target.value })} className="border p-2 rounded col-span-1 md:col-span-2 disabled:bg-gray-100">
+                                <select value={shippingData.tipoEntrega} onChange={e => setShippingData({ ...shippingData, tipoEntrega: e.target.value })} className="border p-2 rounded col-span-1  disabled:bg-gray-100">
                                     <option value="">Tipo de entrega</option>
                                     <option value="domicilio">A domicilio</option>
                                     <option value="agencia">Agencia DAC</option>
                                     <option value="retiro">Retiro en local (Paysandú)</option>
                                 </select>
+                                <input type="text" placeholder="Dirección (si aplica)" value={shippingData.direccion} onChange={e => setShippingData({ ...shippingData, direccion: e.target.value })} className="border p-2 rounded disabled:bg-gray-100" disabled={shippingData.tipoEntrega !== 'domicilio'} />
+
                             </fieldset>
                             {!confirmed && (
                                 <button

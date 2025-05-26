@@ -14,13 +14,13 @@ const CartPage = () => {
     };
 
     return (
-        <div className=" min-h-screen justify-center">
+        <div className="max-w-[1080px] min-h-screen justify-center items-center mx-auto">
             <Header />
-            <main className="max-w-[1080px] mx-auto px-4 py-12">
+            <main className=" mx-auto px-4 py-[65px]">
                 {/* Botón para ir atrás */}
                 <Link to="/producto" className="flex items-center text-white mb-6">
-                    <FaArrowLeft className="mr-2" />
-                    <span>Volver al producto</span>
+                    <FaArrowLeft className="text-black dark:text-white mr-2" />
+                    <span className='text-black dark:text-white text-[10px]'>Volver al producto</span>
                 </Link>
 
                 <h1 className="text-3xl font-bold mb-6">Tu carrito</h1>
@@ -30,14 +30,14 @@ const CartPage = () => {
                     <>
                         <ul className="space-y-4">
                             {items.map((item, i) => (
-                                <li key={i} className="bg-white text-black p-4 rounded-xl flex items-center justify-between">
+                                <li key={i} className="dark:bg-white bg-black text-white dark:text-black p-4 rounded-xl flex items-center justify-between">
                                     <div>
                                         <p className="font-semibold">{item.nombre}</p>
                                         <p className="text-sm">Color: {item.color} / Talle: {item.talle}</p>
                                         <p className="text-sm">Cantidad: {item.quantity}</p>
                                         <p className="text-sm">Precio unitario: ${item.precio}</p>
                                     </div>
-                                    <button onClick={() => removeFromCart(i)} className="text-red-500 hover:underline text-sm">Quitar</button>
+                                    <button onClick={() => removeFromCart(i)} className="text-white dark:text-black hover:underline text-sm">Quitar</button>
                                 </li>
                             ))}
                         </ul>
