@@ -380,7 +380,7 @@ const CheckoutPage = () => {
                             }}
                             customization={{
                                 paymentMethods: {  mercadoPago: 'all', },
-                                redirectMode: 'modal',
+                                redirectMode: 'self',
                             }}
                             onSubmit={handlePaymentSubmit}
                             onError={(mpError) => {
