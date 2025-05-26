@@ -59,6 +59,7 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, email_cliente 
         costo_envio: costoEnvio,
         envio_gratis: envioGratis,
         fecha: new Date().toISOString(),
+        external_reference: datos_envio.externalReference ?? null,
     };
 
     console.log('📝 Guardando orden en Supabase:', orden);
@@ -73,6 +74,7 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, email_cliente 
 
 export default async function handler(req, res) {
     console.log('🔥 Webhook disparado');
+
     if (req.method !== 'POST') {
         console.warn('🚫 Método no permitido:', req.method);
         return res.status(405).send('Método no permitido');
@@ -106,6 +108,12 @@ export default async function handler(req, res) {
             return res.status(200).send('Pago no aprobado');
         }
 
+        const externalReference = payment.metadata?.externalReference;
+        if (!externalReference) {
+            console.error('❌ externalReference no definido en metadata');
+            return res.status(400).send('externalReference faltante');
+        }
+
         const items = payment.metadata?.items || [];
         const email_usuario = payment.payer?.email ?? null;
         const email_cliente = payment.metadata?.email ?? null;
@@ -116,7 +124,8 @@ export default async function handler(req, res) {
             direccion: payment.metadata?.direccion,
             departamento: payment.metadata?.departamento,
             tipoEntrega: payment.metadata?.tipoEntrega ?? payment.metadata?.tipo_entrega ?? null,
-            shippingCost: payment.metadata?.shippingCost ?? payment.metadata?.shipping_cost ?? 0,
+            shippingCost: payment.metadata?.shippingCost ?? 0,
+            externalReference,
         };
 
         console.log('📦 Items desde metadata:', items);
@@ -133,7 +142,22 @@ export default async function handler(req, res) {
 
         console.log('✅ Orden procesada y stock actualizado desde webhook.');
 
-        return res.status(200).send('Orden procesada desde webhook');
+        // ✅ Emitir evento Realtime
+        const channelName = `order_status_${externalReference}`;
+
+        await supabase.channel(channelName)
+            .send({
+                type: 'broadcast',
+                event: 'payment_update',
+                payload: {
+                    external_reference: externalReference,
+                    status: 'approved',
+                },
+            })
+            .then(() => console.log(`📣 Evento realtime enviado al canal ${channelName}`))
+            .catch(err => console.error('❌ Error enviando evento Realtime:', err));
+
+        return res.status(200).send('Orden procesada y evento Realtime enviado');
     } catch (err) {
         console.error('❌ Error en webhook:', err);
         return res.status(500).send('Error procesando webhook');
