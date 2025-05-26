@@ -375,7 +375,7 @@ const CheckoutPage = () => {
                             }}
                             customization={{
                                 paymentMethods: { ticket: 'all', creditCard: 'all', debitCard: 'all', mercadoPago: 'all', },
-                                redirectMode: 'self',
+                                redirectMode: 'blank',
                             }}
                             onSubmit={handlePaymentSubmit}
                             onError={(mpError) => {
