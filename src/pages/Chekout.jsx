@@ -169,7 +169,7 @@ const CheckoutPage = () => {
                     finalizeCheckout('success', "realtime");
                 } else {
                     console.log(`[Checkout-RT] ⚠️ Actualización de estado no-aprobada (${message.payload.status}) para ${currentExternalRef} vía Realtime.`);
-                    // Podrías manejar otros estados si el webhook los envía, ej: finalizeCheckout(message.payload.status, "realtime");
+            // Podrías manejar otros estados si el webhook los envía, ej: finalizeCheckout(message.payload.status, "realtime");
                 }
             } else {
                 console.log(`[Checkout-RT] Mensaje Realtime ignorado (external_reference no coincide o payload inválido). Esperado: ${currentExternalRef}, Recibido: ${message.payload?.external_reference}`);

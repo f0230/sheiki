@@ -121,7 +121,7 @@ export default async function handler(req, res) {
         }
 
         const items = payment.metadata?.items || [];
-        const email_usuario = payment.payer?.email ?? null;
+        const email_usuario = payment.payer?.email ?? payment.metadata?.email ?? null;
         const email_cliente = payment.metadata?.email ?? null;
 
         const datos_envio = {
