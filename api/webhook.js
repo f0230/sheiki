@@ -103,10 +103,11 @@ export default async function handler(req, res) {
 
         console.log('📄 Detalles del pago:', payment);
 
-        if (!payment || payment.status !== 'approved') {
-            console.warn('⚠️ Pago no aprobado o no encontrado');
-            return res.status(200).send('Pago no aprobado');
+        if (!payment || !['approved', 'pending'].includes(payment.status)) {
+            console.warn(`⚠️ Pago no aprobado ni pendiente. Estado recibido: ${payment?.status}`);
+            return res.status(200).send('Pago no procesado');
         }
+        
 
         // Manejo robusto del externalReference
         const externalReference =
@@ -139,11 +140,12 @@ export default async function handler(req, res) {
 
         await procesarOrden({
             items,
-            estado_pago: 'aprobado',
+            estado_pago: payment.status,
             email_usuario,
             email_cliente,
             datos_envio,
         });
+        
 
         console.log('✅ Orden procesada y stock actualizado desde webhook.');
 
@@ -156,7 +158,7 @@ export default async function handler(req, res) {
                 event: 'payment_update',
                 payload: {
                     external_reference: externalReference,
-                    status: 'approved',
+                    status: payment.status,
                 },
             })
             .then(() => console.log(`📣 Evento realtime enviado al canal ${channelName}`))
