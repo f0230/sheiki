@@ -374,7 +374,7 @@ const CheckoutPage = () => {
                                 preferenceId: preferenceId,
                             }}
                             customization={{
-                                paymentMethods: { ticket: 'all', creditCard: 'all', debitCard: 'all', mercadoPago: 'all', },
+                                paymentMethods: {  mercadoPago: 'all', },
                                 redirectMode: 'blank',
                             }}
                             onSubmit={handlePaymentSubmit}
