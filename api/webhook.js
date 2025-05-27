@@ -40,9 +40,28 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, email_cliente 
         total += precio * quantity;
     }
 
-    const costoEnvio = Number(datos_envio.shippingCost) || 0;
+    // ✅ Calcular envío correctamente
+    const shippingRaw = datos_envio?.shippingCost;
+    const parsedShipping = typeof shippingRaw === 'string' ? parseFloat(shippingRaw) : Number(shippingRaw);
+    const costoEnvio = isNaN(parsedShipping) ? 0 : parsedShipping;
+
     const envioGratis = total >= 1800 || datos_envio?.tipoEntrega === 'retiro';
     const totalFinal = total + costoEnvio;
+
+    // ✅ Fecha local Uruguay en formato ISO
+    const fechaMontevideo = new Date().toLocaleString('en-CA', {
+        timeZone: 'America/Montevideo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+    }).replace(',', '');
+
+    const [datePart, timePart] = fechaMontevideo.split(' ');
+    const fechaFinal = `${datePart}T${timePart}-03:00`; // ISO Uruguay
 
     const orden = {
         id_usuario,
@@ -58,16 +77,7 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, email_cliente 
         tipo_entrega: datos_envio.tipoEntrega ?? null,
         costo_envio: costoEnvio,
         envio_gratis: envioGratis,
-        fecha: new Date().toLocaleString('es-UY', {
-            timeZone: 'America/Montevideo',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        }),
-        
-        
+        fecha: fechaFinal,
         external_reference: datos_envio.externalReference ?? null,
     };
 
@@ -80,6 +90,7 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, email_cliente 
         console.log('✅ Orden guardada correctamente.');
     }
 };
+
 
 export default async function handler(req, res) {
     console.log('🔥 Webhook disparado');
