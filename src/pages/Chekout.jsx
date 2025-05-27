@@ -163,7 +163,7 @@ const CheckoutPage = () => {
                         // Exclude payment types if needed, e.g. Mercado Pago Wallet redirect
                         // mercadoPago: 'none', 
                     },
-                    visual: { style: { theme: 'default' } },
+                    visual: { style: { theme: 'dark' } },
                 },
                 callbacks: {
                     onReady: () => {
