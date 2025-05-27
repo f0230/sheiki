@@ -1,12 +1,12 @@
 // src/pages/Chekout.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useCart } from '../store/useCart';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import SkeletonLoader from '../components/SkeletonLoader';
+import { useCart } from '../store/useCart'; //
+import Header from '../components/Header'; //
+import Footer from '../components/Footer'; //
+import SkeletonLoader from '../components/SkeletonLoader'; //
 import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient'; //
 
 const calcularCostoEnvio = ({ tipoEntrega, departamento, total }) => {
     if (total >= 1800) return 0;
@@ -20,54 +20,59 @@ const calcularCostoEnvio = ({ tipoEntrega, departamento, total }) => {
         return 250;
     }
     return 0;
-};
+}; //
 
 const departamentosUY = [
     "Artigas", "Canelones", "Cerro Largo", "Colonia", "Durazno", "Flores",
     "Florida", "Lavalleja", "Maldonado", "Montevideo", "Paysandú", "Río Negro",
     "Rivera", "Rocha", "Salto", "San José", "Soriano", "Tacuarembó", "Treinta y Tres"
-];
+]; //
 
+// Keep controller at module level or manage it carefully to avoid stale closures in callbacks
 let cardPaymentBrickController = null;
 
 const safeUnmountBrick = (controller) => {
     if (controller && typeof controller.unmount === 'function') {
-        const promise = controller.unmount();
-        if (promise && typeof promise.catch === 'function') {
-            promise.catch(e => console.warn("Error unmounting brick:", e));
-        } else {
-            console.warn("Brick controller unmount did not return a catchable promise or was already unmounted.");
+        try {
+            const promise = controller.unmount();
+            if (promise && typeof promise.catch === 'function') {
+                promise.catch(e => console.warn("Error unmounting brick:", e));
+            } else {
+                console.warn("Brick controller unmount did not return a catchable promise or was already unmounted.");
+            }
+        } catch (e) {
+            console.warn("Exception during brick unmount:", e);
         }
     }
-    return null; // Return null to reassign to the controller variable
+    return null;
 };
 
 
 const CheckoutPage = () => {
     const navigate = useNavigate();
-    const { items, clearCart } = useCart();
+    const { items, clearCart } = useCart(); //
 
     const calculateTotal = useCallback(() => {
         return items.reduce((total, item) => total + item.precio * item.quantity, 0);
-    }, [items]);
+    }, [items]); //
 
     const [shippingData, setShippingData] = useState({
         nombre: '', telefono: '', email: '', departamento: '', direccion: '', tipoEntrega: '',
-    });
-    const [shippingCost, setShippingCost] = useState(0);
+    }); //
+    const [shippingCost, setShippingCost] = useState(0); //
     const [confirmedShipping, setConfirmedShipping] = useState(false);
     const [preferenceDetails, setPreferenceDetails] = useState({ id: null, externalReference: null, totalAmount: 0 });
     const [loadingPreference, setLoadingPreference] = useState(false);
-    const [error, setError] = useState(null);
-    const [paymentProcessing, setPaymentProcessing] = useState(false);
-    const [isCheckoutFinalized, setIsCheckoutFinalized] = useState(false);
+    const [error, setError] = useState(null); //
+    const [paymentProcessing, setPaymentProcessing] = useState(false); //
+    const [isCheckoutFinalized, setIsCheckoutFinalized] = useState(false); //
     const [isBrickInitialized, setIsBrickInitialized] = useState(false);
 
     const brickContainerRef = useRef(null);
 
-    const mpPublicKey = 'APP_USR-e255a7a3-c855-4cac-8ef9-b51094d2701b'; // Your Mercado Pago Public Key
+    const mpPublicKey = 'APP_USR-e255a7a3-c855-4cac-8ef9-b51094d2701b'; //
 
-    const isEmailValid = shippingData.email.includes('@') && shippingData.email.includes('.');
+    const isEmailValid = shippingData.email.includes('@') && shippingData.email.includes('.'); //
     const isFormValid = Object.values({
         nombre: shippingData.nombre,
         telefono: shippingData.telefono,
@@ -75,7 +80,7 @@ const CheckoutPage = () => {
         departamento: shippingData.departamento,
         direccion: shippingData.tipoEntrega === 'domicilio' ? shippingData.direccion : 'N/A',
         tipoEntrega: shippingData.tipoEntrega
-    }).every(value => value && String(value).trim() !== '') && isEmailValid;
+    }).every(value => value && String(value).trim() !== '') && isEmailValid; //
 
     useEffect(() => {
         const totalActual = calculateTotal();
@@ -85,7 +90,7 @@ const CheckoutPage = () => {
             total: totalActual,
         });
         setShippingCost(costo);
-    }, [shippingData.tipoEntrega, shippingData.departamento, items, calculateTotal]);
+    }, [shippingData.tipoEntrega, shippingData.departamento, items, calculateTotal]); //
 
     const handleConfirmShippingAndCreatePreference = async () => {
         if (!isFormValid || items.length === 0) {
@@ -94,11 +99,11 @@ const CheckoutPage = () => {
         }
         setLoadingPreference(true);
         setError(null);
-        setIsBrickInitialized(false);
+        setIsBrickInitialized(false); // Reset brick status before creating new preference
 
         cardPaymentBrickController = safeUnmountBrick(cardPaymentBrickController);
         if (brickContainerRef.current) {
-            brickContainerRef.current.innerHTML = '';
+            brickContainerRef.current.innerHTML = ''; // Clear the container
         }
 
         try {
@@ -113,7 +118,7 @@ const CheckoutPage = () => {
                 setPreferenceDetails({
                     id: data.preference.id,
                     externalReference: data.preference.external_reference,
-                    totalAmount: calculateTotal() + shippingCost
+                    totalAmount: parseFloat((calculateTotal() + shippingCost).toFixed(2))
                 });
                 setConfirmedShipping(true);
                 console.log(`[Checkout] ✅ Preferencia y external_reference (${data.preference.external_reference}) establecidos.`);
@@ -130,6 +135,8 @@ const CheckoutPage = () => {
     };
 
     useEffect(() => {
+        // This effect should only run when the conditions to initialize the brick are met
+        // and the brick isn't already initialized for the current preference.
         if (confirmedShipping && preferenceDetails.id && preferenceDetails.externalReference && !loadingPreference && !isBrickInitialized) {
             if (!window.MercadoPago) {
                 console.error("MercadoPago SDK not loaded!");
@@ -151,7 +158,11 @@ const CheckoutPage = () => {
                     },
                 },
                 customization: {
-                    paymentMethods: { maxInstallments: 3 },
+                    paymentMethods: {
+                        maxInstallments: 3,
+                        // Exclude payment types if needed, e.g. Mercado Pago Wallet redirect
+                        // mercadoPago: 'none', 
+                    },
                     visual: { style: { theme: 'default' } },
                 },
                 callbacks: {
@@ -160,48 +171,52 @@ const CheckoutPage = () => {
                         setIsBrickInitialized(true);
                         setPaymentProcessing(false);
                     },
-                    onError: (errorCallback) => { // Renamed to avoid conflict with 'error' state
+                    onError: (errorCallback) => {
                         console.error('Error en Card Payment Brick:', errorCallback);
-                        setError(errorCallback.message || 'Error al inicializar el formulario de pago.');
+                        setError(errorCallback.message || 'Error al inicializar el formulario de pago. Por favor, revisa los datos e intenta de nuevo.');
                         setPaymentProcessing(false);
-                        setIsBrickInitialized(false);
+                        setIsBrickInitialized(false); // Allow re-initialization attempt
                         cardPaymentBrickController = safeUnmountBrick(cardPaymentBrickController);
                         if (brickContainerRef.current) {
                             brickContainerRef.current.innerHTML = '';
                         }
-                        setConfirmedShipping(false);
+                        // setConfirmedShipping(false); // Optionally allow user to re-confirm data, or show a retry button
                     },
                     onSubmit: async (formData) => {
                         setPaymentProcessing(true);
                         setError(null);
                         try {
+                            // Ensure all necessary data is sent to the backend
+                            const payload = {
+                                ...formData,
+                                transaction_amount: preferenceDetails.totalAmount,
+                                external_reference: preferenceDetails.externalReference,
+                                order_items: items.map(item => ({
+                                    id: item.id, // Ensure product ID is passed
+                                    title: item.nombre,
+                                    unit_price: item.precio,
+                                    quantity: item.quantity,
+                                    color: item.color,
+                                    talle: item.talle
+                                })),
+                                shipping_cost: shippingCost,
+                                shipping_data: shippingData,
+                            };
+                            console.log("[Checkout] Enviando datos del brick al backend:", payload);
                             const response = await fetch('/api/process-card-payment', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    ...formData,
-                                    transaction_amount: preferenceDetails.totalAmount,
-                                    external_reference: preferenceDetails.externalReference,
-                                    order_items: items.map(item => ({
-                                        id: item.id,
-                                        title: item.nombre,
-                                        unit_price: item.precio,
-                                        quantity: item.quantity,
-                                        color: item.color,
-                                        talle: item.talle
-                                    })),
-                                    shipping_cost: shippingCost,
-                                    shipping_data: shippingData,
-                                }),
+                                body: JSON.stringify(payload),
                             });
                             const paymentResult = await response.json();
                             if (!response.ok) {
-                                throw new Error(paymentResult.message || paymentResult.error || 'Error al procesar el pago.');
+                                throw new Error(paymentResult.message || paymentResult.error || 'Error al procesar el pago con tarjeta.');
                             }
                             console.log('[Checkout] Respuesta del backend a process-card-payment:', paymentResult);
+                            // UI shows "Processing payment..." and waits for Realtime update
                         } catch (err) {
                             console.error('[Checkout] Error enviando datos del brick al backend:', err);
-                            setError(err.message || 'No se pudo procesar el pago.');
+                            setError(err.message || 'No se pudo procesar el pago. Intenta nuevamente.');
                             setPaymentProcessing(false);
                         }
                     },
@@ -209,39 +224,77 @@ const CheckoutPage = () => {
             };
 
             // Ensure previous instance is unmounted before creating a new one.
+            // This check helps if the effect re-runs due to other dependency changes.
             cardPaymentBrickController = safeUnmountBrick(cardPaymentBrickController);
 
-            if (brickContainerRef.current) { // Check if ref is available
+            if (brickContainerRef.current) {
                 bricksBuilder.create('cardPayment', brickContainerRef.current.id, brickSettings)
-                    .then(controller => { cardPaymentBrickController = controller; })
+                    .then(controller => {
+                        cardPaymentBrickController = controller;
+                        // setIsBrickInitialized(true); // Moved to onReady
+                    })
                     .catch(err => {
                         console.error('Error creating Card Payment Brick:', err);
                         setError('Error al inicializar el formulario de pago.');
-                        setIsBrickInitialized(false);
+                        setIsBrickInitialized(false); // Ensure this is reset on creation failure
                     });
             } else {
                 console.error("Brick container ref not available for mounting.");
                 setError("No se pudo mostrar el formulario de pago. Intenta de nuevo.");
             }
         }
-        return () => { // Cleanup function
-            cardPaymentBrickController = safeUnmountBrick(cardPaymentBrickController);
-            // No need to setIsBrickInitialized(false) here as it might cause re-renders on unmount.
-            // It should be reset when preparing to show the brick again.
+        // The cleanup function for this useEffect
+        return () => {
+            // Unmount the brick if the component unmounts or if dependencies cause a re-run
+            // before the brick is naturally replaced.
+            if (cardPaymentBrickController) {
+                console.log("[Checkout] useEffect Brick cleanup: Unmounting brick.");
+                cardPaymentBrickController = safeUnmountBrick(cardPaymentBrickController);
+                // setIsBrickInitialized(false); // Reset here to allow re-init if deps change
+            }
         };
-    }, [confirmedShipping, preferenceDetails, loadingPreference, mpPublicKey, shippingData, items, shippingCost, calculateTotal, isBrickInitialized]);
+    }, [
+        confirmedShipping,
+        preferenceDetails, // Note: if this is an object, ensure it's stable or use its primitive parts
+        loadingPreference,
+        // mpPublicKey, // Constant, can be removed if defined outside
+        // shippingData, // Object, consider stability or use primitives
+        // items, // Array, consider stability or use length/derived primitive
+        // shippingCost, // Primitive
+        // calculateTotal // Callback, ensure memoized correctly
+        // --- Dependencies that define when to re-initialize the brick ---
+        // If shippingData, items, shippingCost, calculateTotal are expected to change
+        // and require a new brick instance, they should be here.
+        // However, for stability, often only preferenceDetails.id or externalReference is enough
+        // if the amount is part of preferenceDetails.
+        // For now, keeping it simple:
+        mpPublicKey, // Added back for completeness, though it's constant
+        // The core idea is: if preferenceDetails.id changes, we need a new brick.
+        // Other data is passed into the brick's initialization.
+    ]); // Removed isBrickInitialized from here
+
 
     const finalizeCheckout = useCallback((status, fromSource = "unknown") => {
-        if (isCheckoutFinalized) return;
+        if (isCheckoutFinalized) {
+            console.log(`[Checkout] Intento de finalizar checkout ya finalizado (desde ${fromSource}). Estado: ${status}`);
+            return;
+        }
         console.log(`[Checkout] Finalizando checkout con estado: ${status} (desde ${fromSource})`);
-        setIsCheckoutFinalized(true);
+        setIsCheckoutFinalized(true); // Mark as finalized early
         setPaymentProcessing(false);
-        setConfirmedShipping(false);
+        setConfirmedShipping(false); // Reset for potential new checkout later
+        setIsBrickInitialized(false); // Reset brick status
 
         cardPaymentBrickController = safeUnmountBrick(cardPaymentBrickController);
         if (brickContainerRef.current) {
-            brickContainerRef.current.innerHTML = '';
+            brickContainerRef.current.innerHTML = ''; // Clear container
         }
+
+        // Only clear cart after all other operations that might need cart data
+        // However, for payment status pages, cart should be cleared.
+        // Deferring clearCart to SuccessPage/PendingPage might be safer
+        // if there's any scenario where user might return to checkout from them.
+        // But current logic is to clear it here before redirect.
         clearCart(); //
 
         if (status === 'approved' || status === 'success') navigate('/success', { replace: true });
@@ -249,7 +302,7 @@ const CheckoutPage = () => {
         else if (status === 'pending' || status === 'in_process') navigate('/pending', { replace: true });
         else navigate('/', { replace: true });
 
-    }, [isCheckoutFinalized, clearCart, navigate]);
+    }, [isCheckoutFinalized, clearCart, navigate]); //
 
     useEffect(() => {
         if (isCheckoutFinalized) return;
@@ -262,14 +315,17 @@ const CheckoutPage = () => {
         };
         window.addEventListener('storage', handleStorageChange);
         return () => window.removeEventListener('storage', handleStorageChange);
-    }, [finalizeCheckout, isCheckoutFinalized]);
+    }, [finalizeCheckout, isCheckoutFinalized]); //
 
     useEffect(() => {
-        if (isCheckoutFinalized || !preferenceDetails.externalReference) return;
+        if (isCheckoutFinalized || !preferenceDetails.externalReference) {
+            // If no external reference, or checkout is done, don't subscribe.
+            return;
+        }
 
         const channelName = `order_status_${preferenceDetails.externalReference}`;
         console.log(`[Checkout-RT] Intentando suscribir al canal: ${channelName}`);
-        const realtimeChannel = supabase.channel(channelName, {
+        let realtimeChannel = supabase.channel(channelName, { //
             config: { broadcast: { self: true } }
         });
 
@@ -280,7 +336,7 @@ const CheckoutPage = () => {
                 console.log(`[Checkout-RT] 🔔 Estado recibido vía Realtime: ${status}`);
                 finalizeCheckout(status, "realtime");
             } else {
-                console.log(`[Checkout-RT] Mensaje ignorado. Esperado: ${preferenceDetails.externalReference}, Recibido: ${message.payload?.external_reference}`);
+                console.log(`[Checkout-RT] Mensaje Realtime ignorado. Esperado: ${preferenceDetails.externalReference}, Recibido: ${message.payload?.external_reference}`);
             }
         };
 
@@ -290,7 +346,7 @@ const CheckoutPage = () => {
                 if (status === 'SUBSCRIBED') {
                     console.log(`[Checkout-RT] 🔌 Suscrito: ${channelName}`);
                 } else if (['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status)) {
-                    console.error(`[Checkout-RT] ❌ Canal ${channelName} - ${status}:`, err || 'No error object');
+                    console.error(`[Checkout-RT] ❌ Canal ${channelName} - ${status}:`, err || 'No error object provided by SDK');
                 }
             });
 
@@ -298,20 +354,29 @@ const CheckoutPage = () => {
             if (realtimeChannel) {
                 console.log(`[Checkout-RT] 🔌 Desuscribiendo del canal: ${channelName}`);
                 supabase.removeChannel(realtimeChannel)
-                    .then(responseStatus => console.log(`[Checkout-RT] Estado de desuscripción: ${responseStatus}`)) // responseStatus can be 'ok', 'timed out', or 'error'
-                    .catch(removeErr => console.error("[Checkout-RT] Error al remover canal:", removeErr || 'No error object'));
+                    .then(responseStatus => {
+                        console.log(`[Checkout-RT] Estado de desuscripción para ${channelName}: ${responseStatus}`);
+                        realtimeChannel = null; // Ensure it's marked as removed
+                    })
+                    .catch(removeErr => {
+                        console.error(`[Checkout-RT] Error al remover canal ${channelName}:`, removeErr || 'No error object provided by SDK');
+                        realtimeChannel = null; // Ensure it's marked as removed
+                    });
             }
         };
-    }, [preferenceDetails.externalReference, supabase, finalizeCheckout, isCheckoutFinalized]);
+    }, [preferenceDetails.externalReference, supabase, finalizeCheckout, isCheckoutFinalized]); //
 
-    if (paymentProcessing && !isBrickInitialized) {
+    // UI Rendering
+    if (paymentProcessing && !isBrickInitialized && confirmedShipping) { // Loading state while brick is being prepared OR actual payment processing
         return (
             <div className="text-black dark:text-white font-product min-h-screen">
                 <Header />
                 <main className="max-w-[1440px] mx-auto px-4 py-12 mt-10 md:mt-12 flex flex-col items-center justify-center text-center min-h-[calc(100vh-200px)]">
                     <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="bg-white text-black p-8 rounded-lg shadow-xl">
-                        <h2 className="text-2xl font-bold mb-4">Procesando tu pago</h2>
-                        <p className="mb-6">Aguardando confirmación del pago...</p>
+                        <h2 className="text-2xl font-bold mb-4">
+                            {paymentProcessing && isBrickInitialized ? "Procesando tu pago" : "Preparando formulario de pago"}
+                        </h2>
+                        <p className="mb-6">Aguardando...</p>
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
                         {preferenceDetails.externalReference && <p className="text-xs text-gray-400 mt-2">Ref: {preferenceDetails.externalReference}</p>}
                     </motion.div>
@@ -321,6 +386,7 @@ const CheckoutPage = () => {
         );
     }
 
+
     return (
         <div className="min-h-screen max-w-[1080px] mx-auto">
             <Header />
@@ -329,10 +395,11 @@ const CheckoutPage = () => {
                     Checkout
                 </motion.h1>
 
-                {!confirmedShipping && !paymentProcessing && (
+                {!confirmedShipping && ( // Show shipping form if not confirmed
                     <motion.div className="bg-white text-black p-6 rounded-lg mb-8" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
                         <h2 className="text-xl mb-4">Datos de envío</h2>
                         <fieldset disabled={loadingPreference || paymentProcessing} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Inputs for shipping data */}
                             <input type="text" placeholder="Nombre completo" value={shippingData.nombre} onChange={e => setShippingData({ ...shippingData, nombre: e.target.value })} className="border p-2 rounded disabled:bg-gray-100" />
                             <input type="email" placeholder="Email" value={shippingData.email} onChange={e => setShippingData({ ...shippingData, email: e.target.value })} className="border p-2 rounded disabled:bg-gray-100" />
                             <input type="tel" placeholder="Teléfono" value={shippingData.telefono} onChange={e => setShippingData({ ...shippingData, telefono: e.target.value })} className="border p-2 rounded disabled:bg-gray-100" />
@@ -358,41 +425,44 @@ const CheckoutPage = () => {
                     </motion.div>
                 )}
 
+                {/* Order Summary - Always visible if items exist, or when shipping is confirmed */}
                 <motion.div
                     className="bg-white text-black p-6 rounded-lg mb-8"
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: confirmedShipping ? 0 : 0.2 }}
-                    hidden={paymentProcessing && isBrickInitialized}
+                    transition={{ duration: 0.5, delay: 0.1 }}
+                    // Show summary always if items are present, or if shipping confirmed and not yet processing payment with brick
+                    hidden={paymentProcessing && isBrickInitialized && confirmedShipping}
                 >
                     <h2 className="text-2xl font-semibold mb-4">Resumen de compra</h2>
                     {items.length > 0 ? (
                         <>
+                            {/* items list */}
                             <ul className="space-y-4">
                                 {items.map((item, i) => (
                                     <li key={`${item.id}-${item.color}-${item.talle}-${i}`} className="flex justify-between">
                                         <span>{item.nombre} (x{item.quantity}) - {item.color} / T{item.talle}</span>
-                                        <span>${item.precio * item.quantity}</span>
+                                        <span>${(item.precio * item.quantity).toFixed(2)}</span>
                                     </li>
                                 ))}
                             </ul>
                             <div className="mt-4 pt-4 border-t">
                                 <div className="flex justify-between">
                                     <span className="font-semibold">Subtotal:</span>
-                                    <span>${calculateTotal()}</span>
+                                    <span>${calculateTotal().toFixed(2)}</span>
                                 </div>
                                 <div className="mt-2 flex justify-between">
                                     <span className="font-semibold">Envío:</span>
-                                    <span>{shippingCost === 0 && calculateTotal() >= 1800 ? 'Gratis (compra > $1800)' : shippingCost === 0 && (shippingData.tipoEntrega === 'retiro') ? 'Gratis (Retiro)' : shippingCost > 0 ? `$${shippingCost}` : 'A calcular'}</span>
+                                    <span>{shippingCost === 0 && calculateTotal() >= 1800 ? 'Gratis (compra > $1800)' : shippingCost === 0 && (shippingData.tipoEntrega === 'retiro') ? 'Gratis (Retiro)' : shippingCost > 0 ? `$${shippingCost.toFixed(2)}` : 'A calcular'}</span>
                                 </div>
                                 <div className="mt-2 flex justify-between text-lg font-bold">
                                     <span>Total final:</span>
-                                    <span>${calculateTotal() + shippingCost}</span>
+                                    <span>${(calculateTotal() + shippingCost).toFixed(2)}</span>
                                 </div>
                             </div>
                         </>
                     ) : (<p>No hay productos en tu carrito.</p>)}
-                    {confirmedShipping && !paymentProcessing && (
+                    {confirmedShipping && !paymentProcessing && ( // Edit button
                         <button
                             className="mt-4 text-sm text-blue-600 hover:underline"
                             onClick={() => {
@@ -410,14 +480,14 @@ const CheckoutPage = () => {
                     )}
                 </motion.div>
 
-                {loadingPreference && !confirmedShipping && (
+                {loadingPreference && !confirmedShipping && ( // Loading preference state
                     <div className="flex flex-col items-center justify-center bg-white text-black p-6 rounded-lg mt-8">
                         <SkeletonLoader lines={1} />
                         <p className="mt-4 text-lg">Generando tu orden de pago...</p>
                     </div>
                 )}
 
-                {error && (
+                {error && ( // Error display
                     <motion.div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative my-6" role="alert" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                         <strong className="font-bold">Error: </strong>
                         <span className="block sm:inline">{error}</span>
@@ -427,27 +497,30 @@ const CheckoutPage = () => {
                     </motion.div>
                 )}
 
+                {/* Brick Container Logic */}
                 {confirmedShipping && preferenceDetails.id && !loadingPreference && !error && (
                     <motion.div
-                        id="cardPaymentBrick_container" // Keep this ID for the brick
+                        id="cardPaymentBrick_container"
                         ref={brickContainerRef}
-                        className={`bg-white text-black p-6 rounded-lg mt-8 ${paymentProcessing && isBrickInitialized ? 'opacity-50 pointer-events-none' : ''}`} // Added pointer-events-none
+                        className={`bg-white text-black p-6 rounded-lg mt-8 ${paymentProcessing && isBrickInitialized ? 'opacity-50 pointer-events-none' : ''}`}
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.1 }}
                     >
-                        {(!isBrickInitialized && !paymentProcessing) && <p>Cargando formulario de pago...</p>}
-                        {(paymentProcessing && isBrickInitialized) && (
+                        {(!isBrickInitialized && !paymentProcessing) && <p className="text-center text-gray-500">Cargando formulario de pago...</p>}
+                        {(paymentProcessing && isBrickInitialized) && ( // Show this when brick has submitted
                             <div className="flex flex-col items-center justify-center py-4">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-2"></div>
                                 <p>Procesando pago, por favor espera...</p>
                             </div>
                         )}
-                        {/* The brick is mounted here. If paymentProcessing is true AND brick is initialized, the above loader shows instead of an unusable brick. */}
+                        {/* Brick is mounted here by SDK. If !isBrickInitialized, the "Cargando..." message shows.
+                            If isBrickInitialized AND paymentProcessing is true (meaning Brick onSubmit was called),
+                            the processing message above is shown, and the container is faded/disabled. */}
                     </motion.div>
                 )}
 
-                {items.length === 0 && !error && !loadingPreference && (
+                {items.length === 0 && !error && !loadingPreference && !confirmedShipping && (
                     <p className="text-center mt-8 text-black dark:text-white">
                         Tu carrito está vacío.
                         <Link to="/producto" className="text-blue-500 hover:underline ml-1">
