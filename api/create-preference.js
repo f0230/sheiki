@@ -42,11 +42,11 @@ export default async function handler(req, res) {
                     quantity: 1,
                 }] : []),
             ],
-     
+
             external_reference: externalReference,
             metadata: {
                 ...shippingData,
-                shippingCost: Number(shippingCost), 
+                shipping_cost: Number(shippingCost), // snake_case para compatibilidad backend
                 items,
                 externalReference,
             },

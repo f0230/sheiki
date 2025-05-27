@@ -40,15 +40,15 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, email_cliente 
         total += precio * quantity;
     }
 
-    // ✅ Calcular envío correctamente
-    const shippingRaw = datos_envio?.shippingCost;
+    // ✅ Calcular envío correctamente desde snake_case
+    const shippingRaw = datos_envio?.shippingCost ?? datos_envio?.shipping_cost;
     const parsedShipping = typeof shippingRaw === 'string' ? parseFloat(shippingRaw) : Number(shippingRaw);
     const costoEnvio = isNaN(parsedShipping) ? 0 : parsedShipping;
 
     const envioGratis = total >= 1800 || datos_envio?.tipoEntrega === 'retiro';
     const totalFinal = total + costoEnvio;
 
-    // ✅ Fecha local Uruguay en formato ISO
+    // ✅ Fecha local Uruguay en formato ISO válido para Supabase
     const fechaMontevideo = new Date().toLocaleString('en-CA', {
         timeZone: 'America/Montevideo',
         year: 'numeric',
@@ -61,7 +61,7 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, email_cliente 
     }).replace(',', '');
 
     const [datePart, timePart] = fechaMontevideo.split(' ');
-    const fechaFinal = `${datePart}T${timePart}-03:00`; // ISO Uruguay
+    const fechaFinal = `${datePart}T${timePart}-03:00`;
 
     const orden = {
         id_usuario,
@@ -90,7 +90,6 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, email_cliente 
         console.log('✅ Orden guardada correctamente.');
     }
 };
-
 
 export default async function handler(req, res) {
     console.log('🔥 Webhook disparado');
@@ -127,9 +126,7 @@ export default async function handler(req, res) {
             console.warn(`⚠️ Pago no aprobado ni pendiente. Estado recibido: ${payment?.status}`);
             return res.status(200).send('Pago no procesado');
         }
-        
 
-        // Manejo robusto del externalReference
         const externalReference =
             payment.metadata?.externalReference ||
             payment.metadata?.external_reference ||
@@ -150,7 +147,7 @@ export default async function handler(req, res) {
             direccion: payment.metadata?.direccion || '',
             departamento: payment.metadata?.departamento || '',
             tipoEntrega: payment.metadata?.tipoEntrega || payment.metadata?.tipo_entrega || '',
-            shippingCost: isNaN(Number(payment.metadata?.shippingCost)) ? 0 : Number(payment.metadata?.shippingCost),
+            shippingCost: payment.metadata?.shippingCost ?? payment.metadata?.shipping_cost ?? 0,
             externalReference,
         };
 
@@ -165,11 +162,9 @@ export default async function handler(req, res) {
             email_cliente,
             datos_envio,
         });
-        
 
         console.log('✅ Orden procesada y stock actualizado desde webhook.');
 
-        // ✅ Emitir evento Realtime
         const channelName = `order_status_${externalReference}`;
 
         await supabase.channel(channelName)
