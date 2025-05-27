@@ -8,7 +8,7 @@ import './index.css';
 import ScrollToTop from './components/ScrollToTop';
 import LoadingFallback from './components/ui/LoadingFallback'; // 👈 import del nuevo loader
 
-initMercadoPago('APP_USR-e255a7a3-c855-4cac-8ef9-b51094d2701b', {
+initMercadoPago('TEST-f8ca32a1-c2b4-41ef-b9c4-4bb064a4734b', {
   locale: 'es-UY', // 👈 esto es lo que forzará todo al español
 });
 
