@@ -16,9 +16,9 @@ const CartPage = () => {
     };
 
     return (
-        <div className="max-w-[1080px] min-h-screen justify-center items-center mx-auto">
+        <div className="max-w-[1080px] justify-center items-center mx-auto">
             <Header />
-            <main className=" mx-auto px-4 py-[65px]">
+            <main className=" mx-auto px-4 py-[65px]  md:min-h-[500px] min-h-[450px]">
                 {/* Botón para ir atrás */}
                 <Link to="/producto" className="flex items-center text-white mb-6">
                     <FaArrowLeft className="text-black dark:text-white mr-2" />
