@@ -297,7 +297,7 @@ const ProductPage = () => {
   }
 
   return (
-    <div className="md:mt-[50px] font-product min-h-screen flex flex-col">
+    <div className=" font-product min-h-screen flex flex-col">
       <Suspense fallback={<div className="h-[60px]" />}> {/* Placeholder for Header height */}
         <Header ref={carritoIconRef} />
       </Suspense>
@@ -305,7 +305,7 @@ const ProductPage = () => {
         <FreeShippingMarquee />
       </Suspense>
 
-      <main className="max-w-[1440px] mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-8 flex-grow w-full mt-[5px]">
+      <main className="max-w-[1440px] mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-8 flex-grow w-full">
         {/* Image Gallery: Added ARIA roles for accessibility */}
         <div
           ref={imgGalleryRef}
