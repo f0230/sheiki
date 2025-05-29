@@ -2,11 +2,13 @@ import React from 'react';
 import { useCart } from '../store/useCart';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { Link } from 'react-router-dom';  // Importar Link para redirección
+import { Link, useNavigate } from 'react-router-dom';  // Importar Link para redirección
 import { FaArrowLeft } from 'react-icons/fa';  // Para la flecha (requiere instalar react-icons)
 
 const CartPage = () => {
     const { items, removeFromCart, clearCart } = useCart();
+    const navigate = useNavigate();
+
 
     // Calcular el total del carrito
     const calculateTotal = () => {
@@ -51,11 +53,33 @@ const CartPage = () => {
                             <button onClick={clearCart} className="bg-black text-white py-2 px-4 rounded-full hover:bg-gray-800">
                                 Vaciar carrito
                             </button>
-                            <Link to="/pago">
-                                <button className="bg-black text-white py-2 px-4 rounded-full hover:bg-gray-800">
+                                <button
+                                    className="bg-black text-white py-2 px-4 rounded-full hover:bg-gray-800"
+                                    onClick={async () => {
+                                        try {
+                                            await fetch('/api/sendEventToMeta', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    event_name: 'InitiateCheckout',
+                                                    url: window.location.href,
+                                                    user_agent: navigator.userAgent,
+                                                    email: user?.email || null,
+                                                    custom_data: {
+                                                        currency: 'UYU',
+                                                        value: totalCarrito,
+                                                    },
+                                                }),
+                                            });
+                                        } catch (error) {
+                                            console.error("Error al enviar evento de checkout a Meta:", error);
+                                        }
+
+                                        navigate('/pago');
+                                    }}
+                                >
                                     Finalizar compra
                                 </button>
-                            </Link>
                         </div>
                     </>
                 )}

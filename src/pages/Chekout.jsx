@@ -127,7 +127,15 @@ const CheckoutPage = () => {
         clearCart();
 
         // Redirigir según el estado
-        if (status === 'success') navigate('/success', { replace: true });
+        if (status === 'success') {
+            const montoFinal = calculateTotal() + shippingCost;
+            localStorage.setItem('monto_total', montoFinal.toString());
+            if (currentExternalRef) localStorage.setItem('order_id', currentExternalRef);
+            if (shippingData.email) localStorage.setItem('user_email', shippingData.email);
+
+            navigate('/success', { replace: true });
+        }
+          
         else if (status === 'failure') navigate('/failure', { replace: true });
         else if (status === 'pending') navigate('/pending', { replace: true });
         else navigate('/', { replace: true }); // Fallback a la home

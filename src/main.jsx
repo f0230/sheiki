@@ -6,7 +6,6 @@ import { initMercadoPago } from '@mercadopago/sdk-react';
 import './index.css';
 
 import ScrollToTop from './components/ScrollToTop';
-import LoadingFallback from './components/ui/LoadingFallback'; // 👈 import del nuevo loader
 
 initMercadoPago('APP_USR-e255a7a3-c855-4cac-8ef9-b51094d2701b', {
   locale: 'es-UY', // 👈 esto es lo que forzará todo al español
@@ -26,7 +25,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <AuthProvider>
       <Router>
         <ScrollToTop />
-        <Suspense fallback={<LoadingFallback type="spinner" />}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/producto" element={<ProductPage />} />
@@ -36,7 +34,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="/failure" element={<FailurePage />} />
             <Route path="/pending" element={<PendingPage />} />
           </Routes>
-        </Suspense>
       </Router>
     </AuthProvider>
   </React.StrictMode>

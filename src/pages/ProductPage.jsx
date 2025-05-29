@@ -1,15 +1,20 @@
 // src/pages/ProductPage.jsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, Suspense, lazy } from 'react';
 import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
+import { ScrollTrigger, ScrollToPlugin } from 'gsap/all';
 import { supabase } from '../lib/supabaseClient.js';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import FreeShippingMarquee from '../components/FreeShippingMarquee';
 import { useCart } from '../store/useCart';
 import Toast from '../components/Toast';
 import useFlyToCart from '../components/FlyToCartAnimator';
+
+import LoadingFallback from '../components/ui/LoadingFallback';
+
+
+const Header = lazy(() => import('../components/Header'));
+const Footer = lazy(() => import('../components/Footer'));
+const FreeShippingMarquee = lazy(() => import('../components/FreeShippingMarquee'));
+
+
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
@@ -21,17 +26,18 @@ const ProductPage = () => {
   const [selectedTalle, setSelectedTalle] = useState('');
   const [stockDisponible, setStockDisponible] = useState(null);
   const [showToast, setShowToast] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const imgRef = useRef(null);
   const infoRef = useRef(null);
   const imageRefs = useRef([]);
   const carritoIconRef = useRef(null);
-
   const isDragging = useRef(false);
   const startX = useRef(0);
   const scrollLeft = useRef(0);
   const modalRef = useRef(null);
   const tablaRef = useRef(null);
+  const animationFrame = useRef(null);
 
   const { addToCart } = useCart();
   const { animate } = useFlyToCart();
@@ -47,8 +53,6 @@ const ProductPage = () => {
     gsap.to(modalRef.current, { opacity: 0, duration: 0.3, pointerEvents: 'none' });
   };
 
-  const [isLoading, setIsLoading] = useState(true);
-
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
@@ -62,15 +66,8 @@ const ProductPage = () => {
         if (errorProd || !prod) return;
 
         const [varsRes, imgsRes] = await Promise.all([
-          supabase
-            .from('variantes')
-            .select('*')
-            .eq('producto_id', prod.id)
-            .gt('stock', 0),
-          supabase
-            .from('imagenes_producto')
-            .select('*')
-            .eq('producto_id', prod.id),
+          supabase.from('variantes').select('*').eq('producto_id', prod.id).gt('stock', 0),
+          supabase.from('imagenes_producto').select('*').eq('producto_id', prod.id),
         ]);
 
         if (varsRes.error || imgsRes.error) return;
@@ -84,14 +81,8 @@ const ProductPage = () => {
         setIsLoading(false);
       }
     };
-    
-
     fetchData();
   }, []);
-  
-
-  
-
 
   useEffect(() => {
     const colores = [...new Set(variantes.map(v => v.color))];
@@ -99,75 +90,21 @@ const ProductPage = () => {
   }, [variantes]);
 
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     if (imgRef.current && infoRef.current) {
-      gsap.fromTo(
-        imgRef.current,
-        { opacity: 0, x: -40, filter: 'blur(6px)' },
-        {
-          opacity: 1,
-          x: 0,
-          filter: 'blur(0px)',
-          duration: 1.2,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: imgRef.current,
-            start: 'top 80%',
-          },
-        }
-      );
-
-      gsap.fromTo(
-        infoRef.current,
-        { opacity: 0, x: 40, filter: 'blur(6px)' },
-        {
-          opacity: 1,
-          x: 0,
-          filter: 'blur(0px)',
-          duration: 1.2,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: infoRef.current,
-            start: 'top 80%',
-          },
-        }
-      );
+      gsap.fromTo(imgRef.current, { opacity: 0, x: -40, filter: 'blur(6px)' }, { opacity: 1, x: 0, filter: 'blur(0)', duration: 1.2, ease: 'power3.out', scrollTrigger: { trigger: imgRef.current, start: 'top 80%' } });
+      gsap.fromTo(infoRef.current, { opacity: 0, x: 40, filter: 'blur(6px)' }, { opacity: 1, x: 0, filter: 'blur(0)', duration: 1.2, ease: 'power3.out', scrollTrigger: { trigger: infoRef.current, start: 'top 80%' } });
     }
   }, []);
-  
-
-  const coloresDisponibles = [...new Set(variantes.map(v => v.color))];
-  const tallesDisponibles = selectedColor
-    ? [...new Set(variantes.filter(v => v.color === selectedColor).map(v => v.talle))].sort((a, b) => a - b)
-    : [];
-  const imagenesSeleccionadas = imagenesPorColor.filter(img => img.color === selectedColor);
 
   useEffect(() => {
-    if (!imagenesSeleccionadas.length) return;
-
+    if (!imagenesPorColor.length) return;
     imageRefs.current.forEach((el, i) => {
       if (el) {
-        gsap.fromTo(
-          el,
-          {
-            opacity: 0,
-            scale: 0.95,
-            y: 20,
-            filter: 'blur(4px)',
-          },
-          {
-            opacity: 1,
-            scale: 1,
-            y: 0,
-            filter: 'blur(0px)',
-            duration: 0.8,
-            ease: 'power3.out',
-            delay: i * 0.05,
-          }
-        );
+        gsap.fromTo(el, { opacity: 0, scale: 0.95, y: 20, filter: 'blur(4px)' }, { opacity: 1, scale: 1, y: 0, filter: 'blur(0)', duration: 0.8, ease: 'power3.out', delay: i * 0.05 });
       }
     });
   }, [selectedColor]);
-  
 
   useEffect(() => {
     if (selectedColor && selectedTalle) {
@@ -185,41 +122,40 @@ const ProductPage = () => {
     }
   }, [selectedColor, selectedTalle, variantes]);
 
+  const handleMouseMove = (e) => {
+    if (!isDragging.current) return;
+    e.preventDefault();
+    if (animationFrame.current) cancelAnimationFrame(animationFrame.current);
+    animationFrame.current = requestAnimationFrame(() => {
+      const x = e.pageX - imgRef.current.offsetLeft;
+      const walk = (x - startX.current) * 1.5;
+      imgRef.current.scrollLeft = scrollLeft.current - walk;
+    });
+  };
+
   const handleMouseDown = (e) => {
     isDragging.current = true;
     startX.current = e.pageX - imgRef.current.offsetLeft;
     scrollLeft.current = imgRef.current.scrollLeft;
   };
-  const handleMouseMove = (e) => {
-    if (!isDragging.current) return;
-    e.preventDefault();
-    const x = e.pageX - imgRef.current.offsetLeft;
-    const walk = (x - startX.current) * 1.5;
-    imgRef.current.scrollLeft = scrollLeft.current - walk;
-  };
+
   const handleMouseUp = () => isDragging.current = false;
+
+  const coloresDisponibles = [...new Set(variantes.map(v => v.color))];
+  const tallesDisponibles = selectedColor
+    ? [...new Set(variantes.filter(v => v.color === selectedColor).map(v => v.talle))].sort((a, b) => a - b)
+    : [];
+  const imagenesSeleccionadas = imagenesPorColor.filter(img => img.color === selectedColor);
 
 
   if (isLoading) {
-    return (
-      <div className="mt-[50px] px-4 grid grid-cols-1 md:grid-cols-2 gap-8 animate-pulse max-w-[1440px] mx-auto">
-        <div className="w-full h-[375px] md:h-[750px] bg-gray-200 rounded-lg"></div>
-        <div className="flex flex-col gap-4 py-12">
-          <div className="h-8 bg-gray-300 rounded w-2/3"></div>
-          <div className="h-6 bg-gray-300 rounded w-1/2"></div>
-          <div className="h-10 bg-gray-400 rounded w-1/3"></div>
-          <div className="h-10 bg-gray-200 rounded w-full mt-4"></div>
-          <div className="h-6 bg-gray-200 rounded w-1/4 mt-2"></div>
-        </div>
-      </div>
-    );
+    return <LoadingFallback />;
   }
-
-
+  
   return (
-    <div className=" mt-[50px]  font-product min-h-screen">
+    <div className="mt-[50px] font-product min-h-screen">
       <Header ref={carritoIconRef} />
-      <FreeShippingMarquee />
+        <FreeShippingMarquee />
       <main className="max-w-[1440px] mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-8">
         <div
           ref={imgRef}
@@ -302,20 +238,48 @@ const ProductPage = () => {
             onClick={() => {
               if (!producto) return;
 
-              // Asegúrate de que el objeto producto contiene todos los campos necesarios
+              // 1. Agregar al carrito
               addToCart({
                 id: producto.id,
                 nombre: producto.nombre,
                 imagen: imagenesSeleccionadas?.[0]?.url ?? '',
-                precio: producto.precio,  // Asegúrate de pasar el precio del producto
-              }, selectedColor, selectedTalle, 1);  // Pasa el precio junto con el producto
+                precio: producto.precio,
+              }, selectedColor, selectedTalle, 1);
+
+              // 2. Enviar evento a Meta (no bloqueante)
+              (async () => {
+                try {
+                  await fetch('/api/sendEventToMeta', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      event_name: 'AddToCart',
+                      url: window.location.href,
+                      user_agent: navigator.userAgent,
+                      email: user?.email || null,
+                      custom_data: {
+                        currency: 'UYU',
+                        value: producto.precio,
+                        content_name: producto.nombre,
+                      },
+                    }),
+                  });
+                } catch (error) {
+                  console.error("Error al enviar evento a Meta:", error);
+                }
+              })();
+
+              // 3. Mostrar feedback visual
               setShowToast(true);
               setTimeout(() => setShowToast(false), 3000);
+
+              // 4. Animación
               animate(imageRefs.current[0], carritoIconRef.current);
             }}
           >
             Agregar al carrito
           </button>
+
 
           <button
             onClick={abrirTabla}
@@ -343,8 +307,8 @@ const ProductPage = () => {
           </div>
         </div>
       </main>
+      <Suspense fallback={<div />}> <Footer /> </Suspense>
       <Toast message="Producto agregado al carrito" visible={showToast} />
-      <Footer />
     </div>
   );
 };

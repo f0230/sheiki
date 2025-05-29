@@ -1,51 +1,60 @@
 import React, { useEffect } from 'react';
 import { useCart } from '../store/useCart';
-// import { useAuth } from '../context/AuthContext'; // Descomenta si necesitas datos del usuario aquí
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion'; // Para animaciones
+import { motion } from 'framer-motion';
+
+// Si tenés un contexto de usuario con email, podés descomentar esto:
+// import { useAuth } from '../context/AuthContext';
 
 const SuccessPage = () => {
     const { clearCart } = useCart();
-    // const { user } = useAuth(); // Descomenta si es necesario
+    // const { user } = useAuth(); // Si tenés el email del usuario
 
     useEffect(() => {
-        // 1. Notificar a otras pestañas (Checkout.jsx) que el pago fue exitoso.
         console.log("[SuccessPage] Estableciendo sheikiPaymentStatus a 'success'");
         localStorage.setItem('sheikiPaymentStatus', 'success');
 
-        // 2. Limpiar el carrito local y los datos de compra temporales.
-        // La lógica principal de actualización de stock y guardado de orden
-        // debe estar en el webhook (`api/webhook.js`) para mayor fiabilidad.
         console.log("[SuccessPage] Limpiando carrito y datos locales.");
         clearCart();
         localStorage.removeItem('datos_envio');
         localStorage.removeItem('items_comprados');
 
-        // Opcional: Si necesitas enviar alguna confirmación final desde el cliente
-        // o si el webhook no es suficiente por alguna razón (no recomendado para lógica crítica).
-        // const enviarConfirmacionAdicional = async () => {
-        //     try {
-        //         // Lógica para enviar una señal adicional si fuera necesario
-        //         console.log("[SuccessPage] Confirmación adicional (si aplica) enviada.");
-        //     } catch (err) {
-        //         console.error('[SuccessPage] ❌ Error en confirmación adicional:', err);
-        //     }
-        // };
-        // enviarConfirmacionAdicional();
+        // 🔄 Obtener datos de la orden desde localStorage
+        const montoTotal = parseFloat(localStorage.getItem('monto_total')) || 0;
+        const idDeOrden = localStorage.getItem('order_id') || 'ORD-DEFAULT';
+        const email = localStorage.getItem('user_email') || null; // Si lo guardaste en el login
 
-    }, [clearCart]); // Dependencias del useEffect
+        // 🎯 Enviar evento a Meta API
+        fetch('/api/sendEventToMeta', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                event_name: 'Purchase',
+                url: window.location.href,
+                user_agent: navigator.userAgent,
+                email: email,
+                custom_data: {
+                    currency: 'UYU',
+                    value: montoTotal,
+                    order_id: idDeOrden,
+                },
+            }),
+        }).catch((err) => {
+            console.error('[SuccessPage] ❌ Error al enviar evento de compra a Meta:', err);
+        });
+
+        // Opcional: limpiar después de enviar el evento
+        localStorage.removeItem('monto_total');
+        localStorage.removeItem('order_id');
+
+    }, [clearCart]);
 
     return (
         <div className="min-h-screen bg-green-50 flex flex-col items-center justify-center text-center px-4 py-8">
             <motion.div
                 initial={{ opacity: 0, y: -50, scale: 0.8 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{
-                    duration: 0.6,
-                    type: 'spring',
-                    stiffness: 120,
-                    delay: 0.2
-                }}
+                transition={{ duration: 0.6, type: 'spring', stiffness: 120, delay: 0.2 }}
                 className="bg-white p-8 md:p-12 rounded-xl shadow-2xl max-w-lg w-full"
             >
                 <motion.div
@@ -71,6 +80,7 @@ const SuccessPage = () => {
                 <p className="text-lg md:text-xl text-gray-700 max-w-md mx-auto mb-8">
                     Tu compra ha sido procesada correctamente. Hemos enviado un correo electrónico con los detalles de tu pedido.
                 </p>
+
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -83,6 +93,7 @@ const SuccessPage = () => {
                         Volver a la tienda
                     </Link>
                 </motion.div>
+
                 <p className="text-xs text-gray-500 mt-8">
                     Si tienes alguna pregunta, no dudes en <Link to="/contacto" className="text-green-600 hover:underline">contactarnos</Link>.
                 </p>

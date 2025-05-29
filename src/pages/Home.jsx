@@ -6,12 +6,20 @@ import MainImage from "../components/MainImage";
 import ProductCard from "../components/ProductCard";
 import Footer from "../components/Footer";
 
+import LoadingFallback from '../components/ui/LoadingFallback'; // 👈 import del nuevo loader
+
+
 import img1 from '../assets/img1.webp';
 import img2 from '../assets/img2.webp';
 
 const Home = () => {
+
+  
   return (
+
+    
     <div className="w-full">
+
       <Header />
       <Hero />
       <MainImage />
@@ -23,6 +31,8 @@ const Home = () => {
       </div>
 
       <Footer />
+
+
     </div>
   );
 };
