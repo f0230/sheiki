@@ -4,6 +4,8 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import resorte from '../assets/v.webp';
 import logodte from '../assets/logodte.svg';
+import SocialStrip from '../components/Social';
+
 
 
 gsap.registerPlugin(ScrollTrigger);
@@ -116,15 +118,18 @@ const Footer = () => {
         <div ref={footerRef} className="overflow-hidden w-full  text-black flex justify-center">
             <footer className="w-full max-w-[1080px] px-6 pt-12 pb-36 md:pb-48 relative flex flex-col justify-start items-center">
                 {/* Texto central superior */}
-                <p className="text-lg md:text-xl font-product mb-6">Pantuflas con estilo</p>
+
+                <SocialStrip />
+
 
                 {/* 3 columnas */}
                 <div className="flex w-full justify-between items-start text-sm md:text-base z-10 gap-6">
                     {/* Izquierda */}
                     <div className="flex flex-col gap-2 font-product text-left">
-                        <span>Pantuflas</span>
-                        <span>Tienda</span>
                         <span>Sobre nosotros</span>
+                        <span>Terminos y condiciones</span>
+                        <span>Politicas de privacidad</span>
+                       
                         <div className="mt-4">
                             <span>WSP</span>
                             <br />
@@ -134,9 +139,9 @@ const Footer = () => {
 
                     {/* Derecha */}
                     <div className="flex flex-col gap-2 font-product text-right items-end">
-                        <span>Síguenos en instagram</span>
+                        <span>Envios y Devolución</span>
                         <span>Paysandú<br />Uruguay</span>
-                        <span>Sitio web</span>
+                        <span>Desarrollo</span>
                         <div className="mt-2 flex items-center justify-end">
                             <img src={logodte} className="w-[120px] md:w-[150px]" alt="logo" />
                         </div>

@@ -2,10 +2,10 @@
 import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import logo from '../assets/logo.webp';
+import videoSrc from '../assets/videomodelosheiki.mp4'; // Asegurate de colocarlo en src/assets
 
 const Hero = () => {
     const logoRef = useRef(null);
-    const badgeRef = useRef(null);
 
     useEffect(() => {
         gsap.fromTo(
@@ -18,31 +18,32 @@ const Hero = () => {
                 ease: 'power3.out',
             }
         );
-
-        gsap.fromTo(
-            badgeRef.current,
-            { opacity: 0, y: 20 },
-            {
-                opacity: 1,
-                y: 0,
-                delay: 1,
-                duration: 0.8,
-                ease: 'power2.out',
-            }
-        );
     }, []);
 
     return (
-        <section className="mt-[55px] md:mt-[65px] w-full flex justify-center px-4">
-            <div className="w-full max-w-[1440px] h-auto md:h-[300px] lg:h-[358.55px] flex flex-col items-center justify-center relative">
+        <section className="mt-[55px] md:mt-[65px] w-full flex flex-col items-center px-4">
+            <div className="w-full max-w-[1440px] flex flex-col items-center justify-center">
+                {/* Logo animado */}
                 <img
                     ref={logoRef}
                     src={logo}
                     alt="Sheiki Logo"
-                    className="w-[100%] max-w-[1440px] h-auto object-contain"
+                    className="w-full max-w-[1440px] h-auto object-contain"
                 />
+
+                {/* Video debajo del logo */}
                
             </div>
+            <video
+                src={videoSrc}
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="w-full rounded-xl shadow-lg scale-95 "
+
+
+            />
         </section>
     );
 };
