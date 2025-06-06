@@ -117,8 +117,8 @@ const ProductPage = () => {
     if (imgGalleryRef.current) {
       gsap.fromTo(
         imgGalleryRef.current,
-        { opacity: 0, x: -40, filter: 'blur(6px)' },
-        { opacity: 1, x: 0, filter: 'blur(0px)', duration: 1.2, ease: 'power3.out', scrollTrigger: { trigger: imgGalleryRef.current, start: 'top 80%', toggleActions: 'play none none reverse' } }
+        { opacity: 0, x: -40, scale: 0.98, filter: 'blur(6px)' },
+        { opacity: 1, x: 0, scale: 1, filter: 'blur(0px)', duration: 1.2, ease: 'power3.out', scrollTrigger: { trigger: imgGalleryRef.current, start: 'top 80%', toggleActions: 'play none none reverse' } }
       );
     }
     if (infoRef.current) {
@@ -195,31 +195,36 @@ const ProductPage = () => {
     isDragging.current = true;
     startX.current = e.pageX - imgGalleryRef.current.offsetLeft;
     scrollLeft.current = imgGalleryRef.current.scrollLeft;
-    imgGalleryRef.current.classList.add('active:cursor-grabbing'); // Persist cursor style
+    document.body.classList.add('dragging');
   }, []);
 
   const handleMouseMove = useCallback((e) => {
     if (!isDragging.current || !imgGalleryRef.current) return;
     e.preventDefault();
-    if (animationFrame.current) {
-      cancelAnimationFrame(animationFrame.current);
-    }
-    animationFrame.current = requestAnimationFrame(() => {
-      const x = e.pageX - imgGalleryRef.current.offsetLeft;
-      const walk = (x - startX.current) * 1.5; // Adjust multiplier for scroll speed
-      imgGalleryRef.current.scrollLeft = scrollLeft.current - walk;
-    });
+    const x = e.pageX - imgGalleryRef.current.offsetLeft;
+    const walk = (x - startX.current) * 1.5;
+    imgGalleryRef.current.scrollLeft = scrollLeft.current - walk;
   }, []);
 
   const handleMouseUpOrLeave = useCallback(() => {
     if (!imgGalleryRef.current) return;
     isDragging.current = false;
-    if (animationFrame.current) {
-      cancelAnimationFrame(animationFrame.current);
-    }
-    imgGalleryRef.current.classList.remove('active:cursor-grabbing');
-  }, []);
+    document.body.classList.remove('dragging');
 
+    const scrollNow = imgGalleryRef.current.scrollLeft;
+    const slideWidth = imgGalleryRef.current.offsetWidth;
+    const totalSlides = imagenesSeleccionadas.length;
+
+    const index = Math.round(scrollNow / slideWidth);
+    const clampedIndex = Math.max(0, Math.min(totalSlides - 1, index));
+
+    gsap.to(imgGalleryRef.current, {
+      scrollTo: { x: clampedIndex * slideWidth },
+      duration: 0.4,
+      ease: 'power2.out'
+    });
+  }, [imagenesSeleccionadas.length]);
+  
   // Add to cart handler
   const handleAddToCart = useCallback(() => {
     if (!producto || !selectedColor || !selectedTalle || stockDisponible === 0) return;
@@ -309,32 +314,33 @@ const ProductPage = () => {
         {/* Image Gallery: Added ARIA roles for accessibility */}
         <div
           ref={imgGalleryRef}
-          className="flex overflow-x-auto snap-x gap-4 scroll-smooth no-scrollbar md:h-[calc(100vh-150px)] max-md:h-[400px] max-md:pb-4 max-md:mb-4 cursor-grab select-none"
+          className="flex overflow-x-auto snap-x snap-mandatory gap-4 scroll-smooth no-scrollbar md:h-[calc(100vh-150px)] max-md:h-[400px] max-md:pb-4 max-md:mb-4 cursor-grab select-none"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUpOrLeave}
           onMouseLeave={handleMouseUpOrLeave}
-          role="region" // ARIA: Identifies this as a region
-          aria-label={`Imágenes de ${producto.nombre}`} // ARIA: Describes the region
-          tabIndex={0} // ARIA: Make it focusable for keyboard users to scroll
+          role="region"
+          aria-label={`Imágenes de ${producto.nombre}`}
+          tabIndex={0}
         >
           {imagenesSeleccionadas.map((img, idx) => (
-            <div key={img.id || idx} className="w-full h-full min-w-[100%] snap-center flex-shrink-0">
+            <div
+              key={img.id || idx}
+              className="min-w-full snap-start flex-shrink-0 w-full h-full"
+            >
               <OptimizedImage
                 src={img.url}
-                // mobileSrc={img.mobile_url || img.url} // If you have mobile-specific images
+                mobileSrc={img.mobile_url || img.url}
                 alt={`${producto.nombre} - color ${selectedColor} - imagen ${idx + 1}`}
                 className="w-full h-full object-cover"
-                // Provide width/height if known to prevent layout shift, otherwise rely on CSS
-                // width={...}
-                // height={...}
-                loading={idx === 0 ? "eager" : "lazy"} // Eager load first image
-                ref={el => imageRefs.current[idx] = el} // For flyToCart animation source
+                loading={idx === 0 ? 'eager' : 'lazy'}
+                ref={el => imageRefs.current[idx] = el}
               />
             </div>
           ))}
+
           {imagenesSeleccionadas.length === 0 && (
-            <div className="w-full h-full min-w-[100%] snap-center flex-shrink-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+            <div className="min-w-full snap-center flex-shrink-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
               <p className="text-gray-500">No hay imágenes para este color.</p>
             </div>
           )}
