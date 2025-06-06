@@ -404,8 +404,8 @@ const ProductPage = () => {
                     }
                     className={`px-4 py-2 rounded-full border transition-all duration-200 ease-in-out text-[12px] md:text-[14px] focus:outline-none focus:ring-2 focus:ring-offset-1 
             ${isSelected
-                        ? `${colorClass} border-transparent shadow-md`
-                        : `border-gray-400 dark:border-gray-600 hover:border-black dark:hover:border-white text-black dark:text-white bg-transparent`
+                        ? `${colorClass} border-black shadow-md`
+                        : `border-black dark:border-black hover:border-black dark:hover:border-white text-black dark:text-white bg-transparent`
                       }`}
                   >
                     {color}
@@ -423,9 +423,10 @@ const ProductPage = () => {
               <div className="flex items-center gap-2 mb-2">
                 <label htmlFor="talle-select" className="font-bold text-black dark:text-white">Talle</label>
                 {stockDisponible !== null && (
-                  <span className="text-sm text-gray-600 dark:text-gray-400 stock-info opacity-0">
+                  <span className="text-sm text-gray-600 dark:text-gray-400 stock-info transition-opacity duration-200">
                     (Stock: <strong>{stockDisponible}</strong>)
                   </span>
+           
                 )}
               </div>
               <div id="talle-select" role="radiogroup" aria-label="Seleccionar talle" className="flex gap-2 flex-wrap">
@@ -440,7 +441,7 @@ const ProductPage = () => {
                     className={`px-3 py-2 rounded-full border transition-all duration-200 ease-in-out text-[12px] md:text-[14px] min-w-[40px] text-center focus:outline-none focus:ring-2 focus:ring-offset-1
                                           ${selectedTalle === talle
                         ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-md'
-                        : 'border-gray-400 dark:border-gray-600 hover:border-black dark:hover:border-white text-black dark:text-white'
+                        : 'border-black dark:border-black hover:border-black dark:hover:border-white text-black dark:text-white'
                       }`}
                   >
                     {talle}
