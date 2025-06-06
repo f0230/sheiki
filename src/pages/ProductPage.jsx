@@ -301,6 +301,9 @@ const ProductPage = () => {
     return <LoadingFallback />;
   }
 
+
+  
+
   return (
     <div className=" font-product min-h-screen flex flex-col">
       <Suspense fallback={<div className="h-[60px]" />}> {/* Placeholder for Header height */}
@@ -310,11 +313,11 @@ const ProductPage = () => {
         <FreeShippingMarquee />
       </Suspense>
 
-      <main className="max-w-[1440px] mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-8 flex-grow w-full">
+      <main className="max-w-[1440px] mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-4 flex-grow w-full">
         {/* Image Gallery: Added ARIA roles for accessibility */}
         <div
           ref={imgGalleryRef}
-          className="flex overflow-x-auto snap-x snap-mandatory gap-4 scroll-smooth no-scrollbar md:h-[calc(100vh-150px)] max-md:h-[400px] max-md:pb-4 max-md:mb-4 cursor-grab select-none"
+          className="flex overflow-x-auto snap-x snap-mandatory gap-2 scroll-smooth no-scrollbar md:h-[calc(100vh-150px)] max-md:h-[400px] max-md:pb-2cursor-grab select-none"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUpOrLeave}
@@ -347,34 +350,72 @@ const ProductPage = () => {
         </div>
 
         {/* Product Information */}
-        <div className="flex flex-col items-start md:py-12 gap-4 md:gap-6" ref={infoRef}>
+        <div className="flex flex-col items-start gap-2" ref={infoRef}>
           <h1 className="text-[30px] md:text-[45px] font-normal leading-tight dark:text-white">{producto.nombre}</h1>
-          <p className="text-[16px] md:text-[20px] leading-relaxed text-gray-700 dark:text-gray-300">{producto.descripcion}</p>
+          
+          <p className="text-[16px] md:text-[20px] leading-none text-gray-700 dark:text-gray-300">{producto.descripcion}</p>
           <p className="text-[30px] md:text-[45px] font-bold text-black dark:text-white">${producto.precio}</p>
 
           {/* Color Selection */}
+          {/* Selector de color */}
           <div>
-            <label htmlFor="color-select" className="block mb-2 font-semibold text-black dark:text-white">Color</label>
-            <div id="color-select" role="radiogroup" aria-label="Seleccionar color" className="flex gap-2 flex-wrap">
-              {coloresDisponibles.map(color => (
-                <button
-                  key={color}
-                  role="radio"
-                  aria-checked={selectedColor === color}
-                  onClick={() => { setSelectedColor(color); setSelectedTalle(''); }}
-                  onMouseEnter={e => gsap.to(e.currentTarget, { scale: 1.05, duration: 0.2 })}
-                  onMouseLeave={e => gsap.to(e.currentTarget, { scale: 1.0, duration: 0.2 })}
-                  className={`px-4 py-2 rounded-full border transition-all duration-200 ease-in-out text-[12px] md:text-[14px] focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-pink-500
-                                      ${selectedColor === color
-                      ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-md'
-                      : 'border-gray-400 dark:border-gray-600 hover:border-black dark:hover:border-white text-black dark:text-white'
-                    }`}
-                >
-                  {color}
-                </button>
-              ))}
+            <label
+              htmlFor="color-select"
+              className="block mb-2 font-semibold text-black dark:text-white"
+            >
+              Color
+            </label>
+            <div
+              id="color-select"
+              role="radiogroup"
+              aria-label="Seleccionar color"
+              className="flex gap-2 flex-wrap"
+            >
+              {coloresDisponibles.map((color) => {
+                const isSelected = selectedColor === color;
+
+                // Mapa de clases de color según nombre
+                const colorMap = {
+                  amarillo: 'bg-yellow-400 text-black',
+                  azul: 'bg-blue-500 text-white',
+                  rosa: 'bg-pink-400 text-black',
+                  negro: 'bg-black text-white',
+                  blanco: 'bg-white text-black border-black',
+                  marrón: 'bg-[#8B4513] text-white', // Marrón cuero (custom hex)
+                };
+                
+
+                const colorClass = colorMap[color.toLowerCase()] || 'bg-gray-200 text-black';
+
+                return (
+                  <button
+                    key={color}
+                    role="radio"
+                    aria-checked={isSelected}
+                    onClick={() => {
+                      setSelectedColor(color);
+                      setSelectedTalle('');
+                    }}
+                    onMouseEnter={(e) =>
+                      gsap.to(e.currentTarget, { scale: 1.05, duration: 0.2 })
+                    }
+                    onMouseLeave={(e) =>
+                      gsap.to(e.currentTarget, { scale: 1.0, duration: 0.2 })
+                    }
+                    className={`px-4 py-2 rounded-full border transition-all duration-200 ease-in-out text-[12px] md:text-[14px] focus:outline-none focus:ring-2 focus:ring-offset-1 
+            ${isSelected
+                        ? `${colorClass} border-transparent shadow-md`
+                        : `border-gray-400 dark:border-gray-600 hover:border-black dark:hover:border-white text-black dark:text-white bg-transparent`
+                      }`}
+                  >
+                    {color}
+                  </button>
+                );
+              })}
             </div>
           </div>
+
+
 
           {/* Talle Selection */}
           {selectedColor && (
@@ -396,7 +437,7 @@ const ProductPage = () => {
                     onClick={() => setSelectedTalle(talle)}
                     onMouseEnter={e => gsap.to(e.currentTarget, { scale: 1.05, duration: 0.2 })}
                     onMouseLeave={e => gsap.to(e.currentTarget, { scale: 1.0, duration: 0.2 })}
-                    className={`px-3 py-2 rounded-full border transition-all duration-200 ease-in-out text-[12px] md:text-[14px] min-w-[40px] text-center focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-pink-500
+                    className={`px-3 py-2 rounded-full border transition-all duration-200 ease-in-out text-[12px] md:text-[14px] min-w-[40px] text-center focus:outline-none focus:ring-2 focus:ring-offset-1
                                           ${selectedTalle === talle
                         ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-md'
                         : 'border-gray-400 dark:border-gray-600 hover:border-black dark:hover:border-white text-black dark:text-white'
@@ -413,7 +454,7 @@ const ProductPage = () => {
           <button
             className="mt-6 bg-black text-white w-full max-w-[335px] h-[45px] md:h-[53px] rounded-full text-lg font-semibold
                                  hover:bg-gray-800 dark:hover:bg-gray-700 transition-colors duration-200
-                                 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+                                 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 "
             disabled={!selectedColor || !selectedTalle || stockDisponible === null || stockDisponible === 0}
             onClick={handleAddToCart}
             aria-label="Agregar producto al carrito"
@@ -421,14 +462,37 @@ const ProductPage = () => {
             {stockDisponible === 0 && selectedTalle ? "Sin stock" : "Agregar al carrito"}
           </button>
 
-          {/* Size Chart Button */}
-          <button
-            onClick={abrirTabla}
-            className="mt-3 underline text-sm text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors"
-            aria-haspopup="dialog"
-          >
-            Ver tabla de talles
-          </button>
+          <div className="mt-6 flex flex-row gap-3 w-full max-w-[335px]">
+            {/* Botón WhatsApp */}
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(`Encontré estas pantuflas en Sheiki 😍\n${producto.nombre} - $${producto.precio}\n👇 Miralas acá:\n${window.location.href}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold dark:bg-black bg-green-500 hover:bg-green-600 text-white rounded-full transition-colors duration-200 shadow-md"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5"
+                viewBox="0 0 32 32"
+                fill="currentColor"
+              >
+                <path d="M16 .063C7.157.063.063 7.157.063 16c0 2.816.746 5.469 2.03 7.781L.25 31.438l7.782-1.875A15.842 15.842 0 0 0 16 31.938C24.844 31.938 31.938 24.844 31.938 16 31.938 7.157 24.844.063 16 .063zM16 29.25c-2.5 0-4.812-.688-6.875-1.875l-.5-.282-4.625 1.125 1.188-4.562-.313-.5A12.924 12.924 0 0 1 3.75 16c0-6.75 5.5-12.25 12.25-12.25 6.75 0 12.25 5.5 12.25 12.25 0 6.75-5.5 12.25-12.25 12.25zm6.438-8.938c-.375-.188-2.25-1.125-2.594-1.25-.344-.125-.594-.188-.844.188s-.969 1.25-1.188 1.5c-.219.25-.438.281-.813.094-.375-.188-1.594-.625-3.031-2a11.16 11.16 0 0 1-2.094-2.625c-.219-.375-.031-.594.156-.781.156-.156.375-.438.563-.656.188-.219.25-.375.375-.625.125-.25.062-.469 0-.656-.063-.188-.844-2.031-1.156-2.812-.312-.75-.625-.625-.844-.625h-.719c-.25 0-.656.094-1 .469s-1.312 1.281-1.312 3.125c0 1.844 1.344 3.625 1.531 3.875.188.25 2.656 4.062 6.437 5.687.875.375 1.563.594 2.094.75.875.281 1.688.25 2.312.156.719-.125 2.25-.906 2.563-1.781.312-.844.312-1.562.219-1.781-.094-.219-.344-.344-.719-.531z" />
+              </svg>
+              Compartir
+            </a>
+
+            {/* Botón Tabla de Talles */}
+            <button
+              onClick={abrirTabla}
+              className="flex-1 inline-flex items-center justify-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white underline rounded-full transition-colors duration-200"
+              aria-haspopup="dialog"
+            >
+              Ver tabla de talles
+            </button>
+          </div>
+
+
+          
         </div>
 
         {/* Size Chart Modal: Added ARIA for dialog accessibility */}
