@@ -330,7 +330,7 @@ const CheckoutPage = () => {
                                         </div>
                                         <div className="mt-2 flex justify-between">
                                             <span className="font-semibold">Envío:</span>
-                                            <span>{shippingCost === 0 && calculateTotal() >= 1800 ? 'Gratis (compra > $1800)' : shippingCost === 0 && (shippingData.tipoEntrega === 'retiro') ? 'Gratis (Retiro)' : shippingCost === 0 && (shippingData.tipoEntrega === 'agencia') ? 'Gratis (Agencia)' : shippingCost > 0 ? `$${shippingCost}` : 'A calcular'}</span>
+                                            <span>{shippingCost === 0 && calculateTotal() >= 1800 ? 'Gratis ' : shippingCost === 0 && (shippingData.tipoEntrega === 'retiro') ? 'Gratis (Retiro)' : shippingCost === 0 && (shippingData.tipoEntrega === 'agencia') ? 'Gratis (Agencia)' : shippingCost > 0 ? `$${shippingCost}` : 'A calcular'}</span>
                                         </div>
                                         <div className="mt-2 flex justify-between text-lg font-bold">
                                             <span>Total final:</span>

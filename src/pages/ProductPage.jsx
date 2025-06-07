@@ -232,13 +232,18 @@ const ProductPage = () => {
     const currentImageElement = imageRefs.current[0]; // Assuming the first image is the main one for animation
     const cartIconElement = carritoIconRef.current;
 
-    addToCart({
-      id: producto.id,
-      nombre: producto.nombre,
-      // Use the first image of the selected color for the cart, or a placeholder
-      imagen: imagenesSeleccionadas?.[0]?.url || 'path/to/default-image.webp',
-      precio: producto.precio,
-    }, selectedColor, selectedTalle, 1);
+    addToCart(
+      {
+        id: producto.id,
+        nombre: producto.nombre,
+        precio: producto.precio,
+      },
+      selectedColor,
+      selectedTalle,
+      1,
+      imagenesSeleccionadas?.[0]?.url || '/assets/pantufla-default.webp' // asegúrate de tener una fallback
+    );
+    
 
     // Send event to Meta Pixel (non-blocking)
     fetch('/api/sendEventToMeta', {
@@ -353,7 +358,7 @@ const ProductPage = () => {
         <div className="flex flex-col items-start gap-2" ref={infoRef}>
           <h1 className="text-[30px] md:text-[45px] font-normal leading-tight dark:text-white">{producto.nombre}</h1>
           
-          <p className="text-[16px] md:text-[20px] leading-none text-gray-700 dark:text-gray-300">{producto.descripcion}</p>
+          <p className="text-[16px] md:text-[20px] leading-none text-black dark:text-white">{producto.descripcion}</p>
           <p className="text-[30px] md:text-[45px] font-bold text-black dark:text-white">${producto.precio}</p>
 
           {/* Color Selection */}
@@ -361,7 +366,7 @@ const ProductPage = () => {
           <div>
             <label
               htmlFor="color-select"
-              className="block mb-2 font-semibold text-black dark:text-white"
+              className="block mb-2 font-bold text-black dark:text-white"
             >
               Color
             </label>
@@ -380,7 +385,7 @@ const ProductPage = () => {
                   azul: 'bg-blue-500 text-white',
                   rosa: 'bg-pink-400 text-black',
                   negro: 'bg-black text-white',
-                  blanco: 'bg-white text-black border-black',
+                  blanco: 'bg-white text-black border-black ',
                   marrón: 'bg-[#8B4513] text-white', // Marrón cuero (custom hex)
                 };
                 
@@ -402,10 +407,10 @@ const ProductPage = () => {
                     onMouseLeave={(e) =>
                       gsap.to(e.currentTarget, { scale: 1.0, duration: 0.2 })
                     }
-                    className={`px-4 py-2 rounded-full border transition-all duration-200 ease-in-out text-[12px] md:text-[14px] focus:outline-none focus:ring-2 focus:ring-offset-1 
+                    className={`px-4 py-2 rounded-full border transition-all duration-200 ease-in-out text-[12px] md:text-[14px] focus:outline-none focus:ring-2 focus:ring-offset-1  
             ${isSelected
-                        ? `${colorClass} border-black shadow-md`
-                        : `border-black dark:border-black hover:border-black dark:hover:border-white text-black dark:text-white bg-transparent`
+                        ? `${colorClass} border-black dark:border-white shadow-md`
+                        : `border-black dark:border-white hover:border-black dark:hover:border-white text-black dark:text-white bg-transparent`
                       }`}
                   >
                     {color}
@@ -423,7 +428,7 @@ const ProductPage = () => {
               <div className="flex items-center gap-2 mb-2">
                 <label htmlFor="talle-select" className="font-bold text-black dark:text-white">Talle</label>
                 {stockDisponible !== null && (
-                  <span className="text-sm text-gray-600 dark:text-gray-400 stock-info transition-opacity duration-200">
+                  <span className="text-sm text-black dark:text-white stock-info transition-opacity duration-200">
                     (Stock: <strong>{stockDisponible}</strong>)
                   </span>
            
@@ -441,7 +446,7 @@ const ProductPage = () => {
                     className={`px-3 py-2 rounded-full border transition-all duration-200 ease-in-out text-[12px] md:text-[14px] min-w-[40px] text-center focus:outline-none focus:ring-2 focus:ring-offset-1
                                           ${selectedTalle === talle
                         ? 'bg-black text-white dark:bg-white dark:text-black border-transparent shadow-md'
-                        : 'border-black dark:border-black hover:border-black dark:hover:border-white text-black dark:text-white'
+                        : 'border-black dark:border-white hover:border-black dark:hover:border-white text-black dark:text-white'
                       }`}
                   >
                     {talle}
@@ -453,8 +458,8 @@ const ProductPage = () => {
 
           {/* Add to Cart Button */}
           <button
-            className="mt-6 bg-black text-white w-full max-w-[335px] h-[45px] md:h-[53px] rounded-full text-lg font-semibold
-                                 hover:bg-gray-800 dark:hover:bg-gray-700 transition-colors duration-200
+            className="mt-6 bg-black dark:bg-white dark:text-black text-white w-full max-w-[335px] h-[45px] md:h-[53px] rounded-full text-lg font-bold
+                                  
                                  disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 "
             disabled={!selectedColor || !selectedTalle || stockDisponible === null || stockDisponible === 0}
             onClick={handleAddToCart}

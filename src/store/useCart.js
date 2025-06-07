@@ -6,7 +6,7 @@ export const useCart = create(
         (set, get) => ({
             items: [],
 
-            addToCart: (product, color, talle, quantity) => {
+            addToCart: (product, color, talle, quantity, imagen) => {
                 const items = get().items;
                 const existingIndex = items.findIndex(
                     (item) =>
@@ -29,6 +29,7 @@ export const useCart = create(
                                 talle,
                                 quantity,
                                 precio: product.precio,
+                                imagen, // ✅ imagen por color
                             },
                         ],
                     });
@@ -43,8 +44,8 @@ export const useCart = create(
             clearCart: () => set({ items: [] }),
         }),
         {
-            name: 'cart-storage', // clave usada en localStorage
-            getStorage: () => localStorage, // o sessionStorage si preferís que se borre al cerrar el navegador
+            name: 'cart-storage',
+            getStorage: () => localStorage,
         }
     )
 );
