@@ -155,6 +155,7 @@ const CartPage = () => {
                             <div className="flex  items-center justify-center text-sm mt-4"> 
                                 <span>Pago seguro </span>
                                  <OptimizedImage src={mplogo} alt="MercadoPago" className="w-20" />
+                            
 
                             </div>
                             <p className="text-center text-xs text-gray-500">
