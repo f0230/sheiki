@@ -1,7 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { initMercadoPago } from '@mercadopago/sdk-react';
 
 import './index.css';
 import { AuthProvider } from './context/AuthContext';
@@ -9,8 +8,7 @@ import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './layouts/AdminLayout';
 
-// Configurar Mercado Pago
-initMercadoPago(import.meta.env.VITE_MP_PUBLIC_KEY, { locale: 'es-UY' });
+
 
 
 // Lazy load: páginas públicas
