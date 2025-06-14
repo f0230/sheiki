@@ -10,7 +10,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './layouts/AdminLayout';
 
 // Configurar Mercado Pago
-initMercadoPago('APP_USR-e255a7a3-c855-4cac-8ef9-b51094d2701b', { locale: 'es-UY' });
+initMercadoPago(import.meta.env.VITE_MP_PUBLIC_KEY, { locale: 'es-UY' });
 
 
 // Lazy load: páginas públicas
