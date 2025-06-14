@@ -43,14 +43,57 @@ export default async function handler(req, res) {
                 }] : []),
             ],
 
-            external_reference: externalReference,
+            external_reference: crypto.randomUUID(), // o usar el id generado desde tu sistema
+            payer: {
+                name: shippingData?.nombre || "",
+                email: shippingData?.email || "",
+                identification: {
+                    type: "CI",
+                    number: shippingData?.documento || "",
+                },
+            },
+
             metadata: {
                 ...shippingData,
-                shipping_cost: Number(shippingCost), // snake_case para compatibilidad backend
+                shipping_cost: Number(shippingCost),
                 items,
                 externalReference,
             },
+
+            // ✅ Excluir medios de pago
+            payment_methods: {
+                excluded_payment_methods: [
+                    { id: "master" } // Ejemplo: excluir Mastercard
+                ],
+                excluded_payment_types: [
+                    { id: "ticket" } // Ejemplo: excluir efectivo/boleta
+                ],
+                installments: 12 // Máximo número de cuotas
+            },
+
+            // ✅ Aceptar solo usuarios registrados
+            purpose: "wallet_purchase",
+
+            // ✅ Redirección al sitio según estado
+            back_urls: {
+                success: "https://sheiki.uy/success",
+                failure: "https://sheiki.uy/failure",
+                pending: "https://sheiki.uy.com/pending",
+            },
+            auto_return: "approved",
+
+            // ✅ Activar modo binario (opcional)
+            binary_mode: true,
+
+            // ✅ Descripción visible en resumen de tarjeta
+            statement_descriptor: "SHEIKI",
+
+            // ✅ Vigencia de la preferencia (opcional)
+            expires: true,
+            expiration_date_from: new Date().toISOString(), // ahora
+            expiration_date_to: new Date(Date.now() + 3600000).toISOString(), // +1 hora
         };
+
 
         const response = await preferenceClient.create({ body: preference });
 
