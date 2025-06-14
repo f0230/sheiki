@@ -3,7 +3,6 @@ import { Payment } from '@mercadopago/sdk-react';
 
 const PagoMercadoPago = ({
     preferenceId,
-    amount,
     onSubmit,
     setError,
     setPreferenceId,
@@ -21,15 +20,14 @@ const PagoMercadoPago = ({
             </p>
 
             <Payment
-                key={preferenceId} // Se usa la key para forzar el reinicio del componente si cambia la preferencia
+                key={preferenceId}
                 initialization={{
-                    amount,
-                    preferenceId,
+                    preferenceId, // ✅ Solo esto
                 }}
                 customization={{
                     paymentMethods: {
                         mercadoPago: 'all',
-                       
+            
                     },
                     redirectMode: 'modal',
                 }}
@@ -41,7 +39,9 @@ const PagoMercadoPago = ({
                     setCurrentExternalRef(null);
                     setPaymentProcessing(false);
                 }}
-                onReady={() => console.log("[Pago] ✅ Brick de Pago de Mercado Pago listo.")}
+                onReady={() => {
+                    console.log('[Pago] ✅ Brick de Pago de Mercado Pago listo.');
+                }}
             />
         </div>
     );
