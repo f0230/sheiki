@@ -38,7 +38,7 @@ const ResumenCompra = ({ items, calculateTotal, shippingCost, shippingData }) =>
                     </div>
                 </>
             ) : (
-                <p>No hay productos en tu carrito.</p>
+                <p>No hay productos en tu carrito</p>
             )}
         </div>
     );
