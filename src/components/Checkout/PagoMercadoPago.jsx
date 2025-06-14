@@ -1,50 +1,27 @@
 import React from 'react';
 import { Payment } from '@mercadopago/sdk-react';
 
-// destructuring seguro
-const PagoMercadoPago = ({
-    preferenceId,
-    onSubmit,
-    setError,
-    setPreferenceId,
-    setCurrentExternalRef,
-    setPaymentProcessing,
-    ...rest // captura y descarta otras props
-}) => {
+const PagoMercadoPago = ({ preferenceId }) => {
+    if (!preferenceId) return null;
 
     return (
         <div className="bg-white text-black p-6 rounded-lg mt-8">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Completa tu pago</h2>
-            </div>
-
+            <h2 className="text-xl font-semibold mb-4">Completa tu pago</h2>
             <p className="text-sm text-gray-600 mb-4">
                 Serás redirigido de forma segura para completar el pago.
             </p>
 
             <Payment
                 key={preferenceId}
-                initialization={{
-                    preferenceId, // ✅ Solo esto
-                }}
+                initialization={{ preferenceId }}
                 customization={{
                     paymentMethods: {
                         mercadoPago: 'all',
-            
                     },
                     redirectMode: 'modal',
                 }}
-                onSubmit={onSubmit}
-                onError={(mpError) => {
-                    console.error('[Pago] ❌ Error en Payment Brick:', mpError);
-                    setError('Error al iniciar el pago con Mercado Pago. Por favor, intenta de nuevo o edita tus datos.');
-                    setPreferenceId(null);
-                    setCurrentExternalRef(null);
-                    setPaymentProcessing(false);
-                }}
-                onReady={() => {
-                    console.log('[Pago] ✅ Brick de Pago de Mercado Pago listo.');
-                }}
+                onReady={() => console.log('[Brick] ✅ Listo')}
+                onError={(error) => console.error('[Brick] ❌ Error:', error)}
             />
         </div>
     );
