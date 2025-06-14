@@ -1,5 +1,9 @@
 import React from 'react';
-import { Payment } from '@mercadopago/sdk-react';
+import { Payment, initMercadoPago } from '@mercadopago/sdk-react';
+
+
+initMercadoPago(import.meta.env.VITE_MP_PUBLIC_KEY, { locale: 'es-UY' });
+
 
 const PagoMercadoPago = ({
     preferenceId,
@@ -29,9 +33,7 @@ const PagoMercadoPago = ({
                 customization={{
                     paymentMethods: {
                         mercadoPago: 'all',
-                        creditCard: 'all',
-                        debitCard: 'all',
-                        ticket: 'all', // Habilita pagos en efectivo (Abitab, Redpagos)
+                        
                     },
                     redirectMode: 'modal',
                 }}
