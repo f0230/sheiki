@@ -1,14 +1,17 @@
 import React from 'react';
 import { Payment } from '@mercadopago/sdk-react';
 
+// destructuring seguro
 const PagoMercadoPago = ({
     preferenceId,
     onSubmit,
     setError,
     setPreferenceId,
     setCurrentExternalRef,
-    setPaymentProcessing
+    setPaymentProcessing,
+    ...rest // captura y descarta otras props
 }) => {
+
     return (
         <div className="bg-white text-black p-6 rounded-lg mt-8">
             <div className="flex justify-between items-center mb-4">

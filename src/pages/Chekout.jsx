@@ -263,13 +263,12 @@ const CheckoutPage = () => {
         {confirmed && metodoPago === 'mercadopago' && preferenceId && !loading && !error && (
           <PagoMercadoPago
             preferenceId={preferenceId}
-            amount={calculateTotal() + shippingCost}
             onSubmit={handlePaymentSubmit}
             setError={setError}
             setPreferenceId={setPreferenceId}
             setCurrentExternalRef={setCurrentExternalRef}
             setPaymentProcessing={setPaymentProcessing}
-          />
+      />
         )}
 
         {confirmed && metodoPago === 'transferencia' && (
