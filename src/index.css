@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* index.css */
+@layer base {
+  body {
+    @apply font-blauer text-black bg-lightbg transition-colors duration-500;
+  }
+
+  html.dark body {
+    @apply bg-darkbg text-white;
+  }}
+
+img {
+  pointer-events: none;
+  user-select: none;
+}
+
+
+@font-face {
+  font-family: 'Blauer';
+  src: url('./assets/fonts/BlauerNue-Bold.otf')format('truetype');
+  font-style: bold;
+}
+
+@font-face {
+  font-family: 'Blauer';
+  src: url('./assets/fonts/BlauerNue-Regular.otf') format('truetype');
+  font-style: normal;
+}
+
+
+
+/* En tu archivo CSS global si usás Tailwind */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+
+
+.glow-text {
+  text-shadow: 0 0 4px #ffffffaa, 0 0 10px #e06eacaa;
+}
+
+
+
+@keyframes marquee-horizontal {
+  0% {
+    transform: translateX(0%);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}

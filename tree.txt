@@ -1,0 +1,43 @@
+/home/fran/Documents/sheiki
+├── index.html
+├── README.md
+├── api
+│   ├── create-preference.js
+│   └── process_payment.js
+├── src
+│   ├── assets
+│   │   ├── fonts
+│   │   │   ├── ProductSansBold.ttf
+│   │   │   └── ProductSansRegular.ttf
+│   │   ├── img1.webp
+│   │   ├── img2.webp
+│   │   ├── img3.webp
+│   │   ├── logodte.svg
+│   │   ├── logo.webp
+│   │   └── v.webp
+│   ├── components
+│   │   ├── Footer.jsx
+│   │   ├── FreeShippingMarquee.jsx
+│   │   ├── Header.jsx
+│   │   ├── Hero.jsx
+│   │   ├── MainImage.jsx
+│   │   └── ProductCard.jsx
+│   ├── context
+│   │   └── AuthContext.jsx
+│   ├── index.css
+│   ├── lib
+│   │   └── supabaseClient.js
+│   ├── main.jsx
+│   ├── pages
+│   │   ├── CartPage.jsx
+│   │   ├── Home.jsx
+│   │   └── ProductPage.jsx
+│   │   └── Chekout.jsx
+│   └── store
+│       └── useCart.js
+│       └── visualCart.js
+├── tailwind.config.js
+└── vite.config.js
+└── vercel.config.js
+
+
