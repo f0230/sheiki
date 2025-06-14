@@ -14,51 +14,63 @@ export default async function handler(req, res) {
     try {
         const { items, shippingData, shippingCost } = req.body;
 
-        if (!items || !Array.isArray(items) || items.length === 0) {
+        console.log('🧾 Datos crudos recibidos:');
+        console.log('items:', items);
+        console.log('shippingCost:', shippingCost);
+
+        if (!Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ error: 'Items inválidos o vacíos' });
         }
 
-        const hasInvalidItem = items.some(item =>
-            !item.id || !item.nombre || item.precio == null || item.quantity == null
+        const filteredItems = items
+            .filter((item) =>
+                item &&
+                item.id &&
+                item.nombre &&
+                !isNaN(Number(item.precio)) &&
+                !isNaN(Number(item.quantity)) &&
+                Number(item.precio) > 0 &&
+                Number(item.quantity) > 0
+            )
+            .map((item) => ({
+                id: item.id,
+                title: item.nombre,
+                unit_price: Number(item.precio),
+                quantity: Number(item.quantity),
+            }));
+
+        if (filteredItems.length === 0) {
+            return res.status(400).json({ error: 'Todos los productos tienen precio o cantidad inválida' });
+        }
+
+        // Agregamos el ítem del envío si corresponde
+        if (!isNaN(Number(shippingCost)) && Number(shippingCost) > 0) {
+            filteredItems.push({
+                title: `Costo de envío (${shippingData?.tipoEntrega || 'entrega'})`,
+                unit_price: Number(shippingCost),
+                quantity: 1,
+            });
+        }
+
+        const totalMonto = filteredItems.reduce(
+            (acc, item) => acc + item.unit_price * item.quantity,
+            0
         );
 
-        if (hasInvalidItem) {
-            return res.status(400).json({ error: 'Uno o más items tienen campos faltantes' });
+        if (totalMonto <= 0) {
+            console.error('[create-preference] ❌ Monto total inválido:', totalMonto);
+            return res.status(400).json({ error: 'El monto total de la orden es 0. No se puede procesar el pago.' });
         }
 
         const externalReference = `orden-${Date.now()}`;
 
-        const itemList = [
-            ...items.map((item) => ({
-                id: item.id,
-                title: item.nombre,
-                unit_price: Number(item.precio || 0),
-                quantity: Number(item.quantity || 0),
-            })),
-            ...(shippingCost > 0 ? [{
-                title: `Costo de envío (${shippingData?.tipoEntrega || 'entrega'})`,
-                unit_price: Number(shippingCost || 0),
-                quantity: 1,
-            }] : []),
-        ];
-
-        const totalMonto = itemList.reduce((acc, item) => acc + item.unit_price * item.quantity, 0);
-
-        if (totalMonto <= 0) {
-            console.error('[create-preference] ❌ Monto total inválido:', totalMonto);
-            return res.status(400).json({ error: 'El monto total es 0. No se puede procesar el pago.' });
-        }
-
-        console.log('🧾 Total preferencia:', totalMonto);
-        console.log('📦 Items:', itemList);
-
         const preference = {
-            items: itemList,
+            items: filteredItems,
             external_reference: externalReference,
             metadata: {
                 ...shippingData,
-                shipping_cost: Number(shippingCost),
-                items,
+                shipping_cost: Number(shippingCost || 0),
+                items, // los originales, para trazabilidad
                 externalReference,
             },
         };
@@ -67,7 +79,7 @@ export default async function handler(req, res) {
 
         return res.status(200).json({ preference: response });
     } catch (error) {
-        console.error('[create-preference] Error:', error.message, error.stack);
+        console.error('[create-preference] Error crítico:', error.message, error.stack);
         return res.status(500).json({
             error: 'Error al crear preferencia',
             details: error.message,
