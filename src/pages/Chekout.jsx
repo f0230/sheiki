@@ -268,7 +268,8 @@ const CheckoutPage = () => {
             setPreferenceId={setPreferenceId}
             setCurrentExternalRef={setCurrentExternalRef}
             setPaymentProcessing={setPaymentProcessing}
-      />
+          />
+      
         )}
 
         {confirmed && metodoPago === 'transferencia' && (
