@@ -190,7 +190,6 @@ const CheckoutPage = () => {
               </>
             )}
 
-            {/* AÑADIDO: Bloque con el botón de editar */}
             {confirmed && (
               <div className="bg-white text-black p-6 rounded-lg mt-8">
                 <div className="flex justify-between items-center mb-4">
@@ -232,6 +231,7 @@ const CheckoutPage = () => {
                 </label>
               </div>
             )}
+
           </>
         )}
 
