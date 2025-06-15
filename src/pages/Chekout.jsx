@@ -271,7 +271,6 @@ const CheckoutPage = () => {
             setPaymentProcessing={setPaymentProcessing}
           />
         )}
-
         {confirmed && metodoPago === 'transferencia' && (
           <div className="bg-white text-black p-6 rounded-lg mt-8">
             <h2 className="text-xl font-semibold mb-2">Transferencia bancaria</h2>
@@ -289,6 +288,10 @@ const CheckoutPage = () => {
               className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
               onClick={async () => {
                 try {
+                  // ✅ Guardar los datos antes de finalizar el checkout
+                  localStorage.setItem('datos_envio', JSON.stringify({ ...shippingData, shippingCost }));
+                  localStorage.setItem('items_comprados', JSON.stringify(items));
+
                   setToastVisible(true);
                   await finalizeCheckout('pending_transferencia', 'manual_transfer');
                 } catch (error) {
@@ -302,6 +305,7 @@ const CheckoutPage = () => {
             </button>
           </div>
         )}
+
 
         {items.length === 0 && !error && !loading && (
           <p className="text-center mt-8">
