@@ -40,11 +40,13 @@ const useFinalizarCheckout = ({
                     });
 
                     if (!res.ok) {
-                        const text = await res.text(); 
-                        console.error('❌ Error al procesar transferencia:', errorData);
+                        const text = await res.text();
+                        console.error('❌ Error al procesar transferencia:', text); // <- CORREGIDO
                         throw new Error('No se pudo registrar la orden por transferencia.');
                     }
                 }
+                
+                
 
                 setIsCheckoutFinalized(true);
                 setPaymentProcessing(false);

@@ -30,24 +30,39 @@ export default async function handler(req, res) {
             0
         ) + Number(shippingCost || 0);
 
-        const { error: insertError } = await supabase.from('ordenes').insert([
-            {
-                external_reference: order_id,
-                items_comprados,
-                datos_envio,
-                estado_pago: 'pending_transferencia',
-                tipo_pago: 'manual_transfer',
-                total,
-                created_at: new Date().toISOString(),
-            },
-        ]);
+        const { data: existingOrder, error: fetchError } = await supabase
+            .from('ordenes')
+            .select('id')
+            .eq('external_reference', order_id)
+            .maybeSingle();
 
-        if (insertError) {
-            console.error('❌ Error al insertar orden:', insertError);
-            return res.status(500).json({ message: 'Error al guardar la orden', details: insertError.message });
+        if (fetchError) {
+            console.error('❌ Error al verificar orden existente:', fetchError);
+            return res.status(500).json({ message: 'Error al verificar existencia de orden', details: fetchError.message });
         }
 
-        console.log(`🧾 Orden por transferencia creada correctamente (${order_id})`);
+        if (!existingOrder) {
+            const { error: insertError } = await supabase.from('ordenes').insert([
+                {
+                    external_reference: order_id,
+                    items_comprados,
+                    datos_envio,
+                    estado_pago: 'pending_transferencia',
+                    tipo_pago: 'manual_transfer',
+                    total,
+                    created_at: new Date().toISOString(),
+                },
+            ]);
+
+            if (insertError) {
+                console.error('❌ Error al insertar orden:', insertError);
+                return res.status(500).json({ message: 'Error al guardar la orden', details: insertError.message });
+            }
+
+            console.log(`🧾 Orden por transferencia creada correctamente (${order_id})`);
+        } else {
+            console.log(`ℹ️ Orden ya existente con referencia (${order_id}), se omite inserción.`);
+        }
 
         const stockResult = await deductStock(items_comprados);
         if (!stockResult.success) {

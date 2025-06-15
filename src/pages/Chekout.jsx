@@ -222,7 +222,7 @@ const CheckoutPage = () => {
                 <label className="block mt-2">
                   <input
                     type="radio"
-                    name="metodoPago"
+                    name="transferencia"
                     value="transferencia"
                     checked={metodoPago === 'transferencia'}
                     onChange={() => setMetodoPago('transferencia')}
