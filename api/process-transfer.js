@@ -1,7 +1,7 @@
 // /pages/api/process-transfer.js
 
 import { createClient } from '@supabase/supabase-js';
-import { deductStock } from '../../lib/stock-manager.js'; // Asegurate que exista el archivo
+import { deductStock } from '../src/lib/stock-manager.js';
 
 // Inicializar Supabase con variables privadas del entorno de Vercel
 const supabase = createClient(
