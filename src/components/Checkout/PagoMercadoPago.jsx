@@ -35,7 +35,7 @@ const PagoMercadoPago = ({
                         mercadoPago: 'all',
                         maxInstallments: 6,
                     },
-                    redirectMode: 'modal',
+                    redirectMode: 'blank',
                     defaultPaymentOption: {
                         walletForm: true,
                    
@@ -56,10 +56,9 @@ const PagoMercadoPago = ({
                 onReady={() => console.log("[Pago] ✅ Brick de Pago de Mercado Pago listo.")}
                 onClose={() => {
                     console.warn('[Brick] 🛑 El usuario cerró el modal sin pagar');
-                    if (typeof window.setPaymentProcessing === 'function') {
-                        window.setPaymentProcessing(false);
-                    }
-                  }}
+                    setPaymentProcessing(false); // sin usar window.setPaymentProcessing
+                }}
+                  
             />
         </div>
     );

@@ -271,6 +271,8 @@ const CheckoutPage = () => {
             setPaymentProcessing={setPaymentProcessing}
           />
         )}
+
+        
         {confirmed && metodoPago === 'transferencia' && (
           <div className="bg-white text-black p-6 rounded-lg mt-8">
             <h2 className="text-xl font-semibold mb-2">Transferencia bancaria</h2>
@@ -285,10 +287,25 @@ const CheckoutPage = () => {
               Una vez realizado el pago, presioná el botón para confirmar tu pedido.
             </p>
             <button
-              className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
+              className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition"
               onClick={async () => {
                 try {
-                  // ✅ Guardar los datos antes de finalizar el checkout
+                  if (!confirmed) {
+                    console.warn("⚠️ No se confirmaron los datos de envío.");
+                    return;
+                  }
+
+                  // Verificación defensiva
+                  if (items.length === 0 || !shippingData?.email || !shippingData?.nombre) {
+                    console.error("❌ Datos de envío incompletos:", shippingData);
+                    return;
+                  }
+
+                  console.log("📤 Guardando datos en localStorage", {
+                    datos_envio: { ...shippingData, shippingCost },
+                    items_comprados: items
+                  });
+
                   localStorage.setItem('datos_envio', JSON.stringify({ ...shippingData, shippingCost }));
                   localStorage.setItem('items_comprados', JSON.stringify(items));
 
@@ -305,6 +322,7 @@ const CheckoutPage = () => {
             </button>
           </div>
         )}
+
 
 
         {items.length === 0 && !error && !loading && (
