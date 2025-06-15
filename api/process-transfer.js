@@ -1,7 +1,5 @@
-// api/process-transfer.js
-
 import { createClient } from '@supabase/supabase-js';
-import { deductStock } from '../src/lib/stock-manager.js'; // ✅ Ruta corregida
+import { deductStock } from '../src/lib/stock-manager.js';
 
 const supabase = createClient(
     process.env.SUPABASE_URL,
@@ -23,11 +21,19 @@ export default async function handler(req, res) {
             return res.status(400).json({ message: 'Faltan datos obligatorios para registrar la orden.' });
         }
 
-        const total =
-            items_comprados.reduce((acc, item) => acc + item.precio * item.quantity, 0) +
-            Number(shippingCost || 0);
+        const {
+            nombre,
+            email,
+            telefono,
+            direccion,
+            departamento,
+            tipoEntrega
+        } = datos_envio;
 
-        // Verificar si la orden ya existe
+        const envioGratis = Number(shippingCost || 0) === 0;
+        const total = items_comprados.reduce((acc, item) => acc + item.precio * item.quantity, 0) + Number(shippingCost || 0);
+
+        // Verificar si ya existe la orden
         const { data: existingOrder, error: fetchError } = await supabase
             .from('ordenes')
             .select('id')
@@ -43,11 +49,19 @@ export default async function handler(req, res) {
             const { error: insertError } = await supabase.from('ordenes').insert([
                 {
                     external_reference: order_id,
-                    items_comprados,
-                    datos_envio,
+                    items_comprados, // Asegurate que sea JSONB en la tabla
                     estado_pago: 'pending_transferencia',
                     tipo_pago: 'manual_transfer',
                     total,
+                    email_cliente: email,
+                    nombre,
+                    telefono,
+                    direccion,
+                    departamento,
+                    tipo_entrega: tipoEntrega,
+                    costo_envio: Number(shippingCost || 0),
+                    envio_gratis: envioGratis,
+                    fecha: new Date().toISOString(),
                     created_at: new Date().toISOString(),
                 },
             ]);
