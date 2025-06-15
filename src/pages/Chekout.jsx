@@ -18,7 +18,7 @@ import useGenerarPreferencia from '../hooks/useGenerarPreferencia';
 import useFinalizarCheckout from '../hooks/useFinalizarCheckout';
 import useRealtimePago from '../hooks/useRealtimePago';
 
-const LOCAL_STORAGE_KEY = 'shippingData';transferencia
+const LOCAL_STORAGE_KEY = 'shippingData';
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
