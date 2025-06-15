@@ -1,10 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-import { deductStock } from '../src/lib/stock-manager.js';
-
-const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+import { supabase } from '../../lib/supabaseClient';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -12,78 +6,63 @@ export default async function handler(req, res) {
     }
 
     try {
+        const { order_id, datos_envio, items_comprados, shippingCost } = req.body;
+
         console.log('📦 Payload recibido:', req.body);
 
-        const { order_id, items_comprados, datos_envio, shippingCost } = req.body;
-
-        if (!order_id || !items_comprados || !datos_envio) {
-            console.error('❌ Faltan datos obligatorios:', { order_id, items_comprados, datos_envio });
-            return res.status(400).json({ message: 'Faltan datos obligatorios para registrar la orden.' });
+        // Validación básica
+        if (!order_id || !datos_envio || !items_comprados || !Array.isArray(items_comprados)) {
+            return res.status(400).json({ message: 'Faltan datos obligatorios' });
         }
 
         const {
             nombre,
             email,
             telefono,
-            direccion,
             departamento,
-            tipoEntrega
+            tipoEntrega,
+            direccion
         } = datos_envio;
 
-        const envioGratis = Number(shippingCost || 0) === 0;
-        const total = items_comprados.reduce((acc, item) => acc + item.precio * item.quantity, 0) + Number(shippingCost || 0);
-
-        // Verificar si ya existe la orden
-        const { data: existingOrder, error: fetchError } = await supabase
-            .from('ordenes')
-            .select('id')
-            .eq('external_reference', order_id)
-            .maybeSingle();
-
-        if (fetchError) {
-            console.error('❌ Error al verificar orden existente:', fetchError);
-            return res.status(500).json({ message: 'Error al verificar existencia de orden', details: fetchError.message });
+        if (!email) {
+            return res.status(400).json({ message: 'El email del cliente es obligatorio' });
         }
 
-        if (!existingOrder) {
-            const { error: insertError } = await supabase.from('ordenes').insert([
-                {
-                    external_reference: order_id,
-                    items_comprados, // Asegurate que sea JSONB en la tabla
-                    estado_pago: 'pending_transferencia',
-                    tipo_pago: 'manual_transfer',
-                    total,
-                    email_cliente: email,
-                    nombre,
-                    telefono,
-                    direccion,
-                    departamento,
-                    tipo_entrega: tipoEntrega,
-                    costo_envio: Number(shippingCost || 0),
-                    envio_gratis: envioGratis,
-                    fecha: new Date().toISOString(),
-                    created_at: new Date().toISOString(),
-                },
-            ]);
+        // Calcular monto total
+        const montoProductos = items_comprados.reduce((total, item) => {
+            return total + item.precio * item.quantity;
+        }, 0);
+        const montoFinal = montoProductos + shippingCost;
 
-            if (insertError) {
-                console.error('❌ Error al insertar orden:', insertError);
-                return res.status(500).json({ message: 'Error al guardar la orden', details: insertError.message });
-            }
+        // Insertar orden en Supabase
+        const { error } = await supabase.from('ordenes').insert({
+            order_id,
+            datos_envio,
+            items_comprados,
+            shippingCost,
+            monto: montoFinal,
+            estado: 'pending_transferencia',
+            medio_pago: 'manual_transfer',
+            nombre,
+            telefono,
+            direccion,
+            departamento,
+            tipo_entrega: tipoEntrega,
+            email_usuario: email, // ✅ Aquí se usa el email del cliente
+        });
 
-            console.log(`🧾 Orden por transferencia creada correctamente (${order_id})`);
-        } else {
-            console.log(`ℹ️ Orden ya existente con referencia (${order_id}), se omite inserción.`);
+        if (error) {
+            console.error('❌ Error al insertar orden:', error);
+            return res.status(500).json({
+                message: 'Error al guardar la orden',
+                details: error.message,
+            });
         }
 
-        const stockResult = await deductStock(items_comprados);
-        if (!stockResult.success) {
-            return res.status(500).json({ message: 'Error al deducir stock', details: stockResult.error });
-        }
+        return res.status(200).json({ message: 'Orden registrada con éxito' });
 
-        return res.status(200).json({ message: `Orden ${order_id} registrada correctamente.` });
-    } catch (error) {
-        console.error('❌ Error inesperado al procesar transferencia:', error);
-        return res.status(500).json({ message: 'Error interno del servidor', details: error.message });
+    } catch (err) {
+        console.error('❌ Error inesperado en process-transfer:', err);
+        return res.status(500).json({ message: 'Error interno del servidor' });
     }
 }
