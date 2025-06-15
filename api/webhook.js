@@ -124,10 +124,10 @@ export default async function handler(req, res) {
 
         console.log('📄 Detalles del pago:', payment);
 
-        if (!payment || !['approved', 'pending'].includes(payment.status)) {
-            console.warn(`⚠️ Pago no aprobado ni pendiente. Estado recibido: ${payment?.status}`);
+        if (!payment || !['approved', 'pending', 'in_process'].includes(payment.status)) {
+            console.warn(`⚠️ Estado no manejado: ${payment?.status}`);
             return res.status(200).send('Pago no procesado');
-        }
+          }
 
         const externalReference =
             payment.metadata?.externalReference ||
@@ -177,6 +177,8 @@ export default async function handler(req, res) {
                 payload: {
                     external_reference: externalReference,
                     status: payment.status,
+                    status_detail: payment.status_detail || null
+
                 },
             })
             .then(() => console.log(`📣 Evento realtime enviado al canal ${channelName}`))
