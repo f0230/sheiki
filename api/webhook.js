@@ -159,13 +159,20 @@ export default async function handler(req, res) {
         console.log('📧 Email usuario:', email_usuario);
         console.log('📫 Datos de envío:', datos_envio);
 
-        await procesarOrden({
-            items,
-            estado_pago: payment.status,
-            email_usuario,
-            email_cliente,
-            datos_envio,
-        });
+        if (['approved', 'pending', 'in_process'].includes(payment.status)) {
+            await procesarOrden({
+                items,
+                estado_pago: payment.status,
+                email_usuario,
+                email_cliente,
+                datos_envio,
+            });
+            console.log('✅ Orden procesada y stock actualizado desde webhook.');
+        } else {
+            console.log(`ℹ️ Pago rechazado (${payment.status}). No se guarda orden.`);
+        }
+          
+          
 
         console.log('✅ Orden procesada y stock actualizado desde webhook.');
 
