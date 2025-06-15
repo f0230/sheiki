@@ -1,4 +1,4 @@
-// hooks/useFinalizarCheckout.js
+// /hooks/useFinalizarCheckout.js
 
 import { useCallback } from 'react';
 
@@ -41,12 +41,10 @@ const useFinalizarCheckout = ({
 
                     if (!res.ok) {
                         const text = await res.text();
-                        console.error('❌ Error al procesar transferencia:', text); // <- CORREGIDO
+                        console.error('❌ Error al procesar transferencia:', text);
                         throw new Error('No se pudo registrar la orden por transferencia.');
                     }
                 }
-                
-                
 
                 setIsCheckoutFinalized(true);
                 setPaymentProcessing(false);

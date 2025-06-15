@@ -13,11 +13,6 @@ export default async function handler(req, res) {
         return res.status(405).json({ message: 'Método no permitido' });
     }
 
-    const adminSecret = req.headers.authorization;
-    if (adminSecret !== `Bearer ${process.env.ADMIN_SECRET_KEY}`) {
-        return res.status(401).json({ message: 'No autorizado' });
-    }
-
     try {
         const { order_id, items_comprados, datos_envio, shippingCost } = req.body;
 
