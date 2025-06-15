@@ -40,7 +40,7 @@ const useFinalizarCheckout = ({
                     });
 
                     if (!res.ok) {
-                        const errorData = await res.json();
+                        const text = await res.text(); 
                         console.error('❌ Error al procesar transferencia:', errorData);
                         throw new Error('No se pudo registrar la orden por transferencia.');
                     }
