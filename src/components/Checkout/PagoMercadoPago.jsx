@@ -8,7 +8,8 @@ const PagoMercadoPago = ({
     setError,
     setPreferenceId,
     setCurrentExternalRef,
-    setPaymentProcessing
+    setPaymentProcessing,
+    finalizeCheckout
 }) => {
     const handlePaymentSubmit = async ({ formData }) => {
         try {
@@ -89,6 +90,11 @@ const PagoMercadoPago = ({
                 localStorage.setItem('ticket_url', data.external_resource_url);
                 localStorage.setItem('ticket_status_ref', data.external_reference); // por si querés usarlo en PendingPage
                 window.location.href = '/pending';
+                return;
+            }
+            if (data.status === 'approved') {
+                await finalizeCheckout('approved', 'brick');
+                return;
             }
 
         } catch (error) {

@@ -274,6 +274,7 @@ const CheckoutPage = () => {
             setPreferenceId={setPreferenceId}
             setCurrentExternalRef={setCurrentExternalRef}
             setPaymentProcessing={setPaymentProcessing}
+            finalizeCheckout={finalizeCheckout} 
           />
         )}
 

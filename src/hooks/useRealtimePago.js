@@ -31,8 +31,10 @@ const useRealtimePago = ({
                 console.warn(`[RealtimePago] 🚫 Pago rechazado (${status_detail})`);
                 finalizeCheckout('rejected', 'realtime');
             } else {
-                console.log(`[RealtimePago] ❔ Estado no manejado automáticamente: ${status}`);
+                console.warn(`[RealtimePago] ⚠️ Estado desconocido o no manejado: ${status}`);
+                finalizeCheckout(status || 'unknown', 'realtime');
             }
+            
         };
 
         realtimeChannel
