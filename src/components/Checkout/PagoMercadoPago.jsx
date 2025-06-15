@@ -83,8 +83,9 @@ const PagoMercadoPago = ({
 
             // 🧾 Redirige a instrucciones si es efectivo
             if (data.status === 'pending' && data.external_resource_url) {
-                console.log('📄 Redirigiendo a ticket:', data.external_resource_url);
-                window.location.href = data.external_resource_url;
+                localStorage.setItem('ticket_url', data.external_resource_url);
+                localStorage.setItem('ticket_status_ref', data.external_reference); // por si querés usarlo en PendingPage
+                window.location.href = '/pending';
             }
 
         } catch (error) {
