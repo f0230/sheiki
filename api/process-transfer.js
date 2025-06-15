@@ -32,6 +32,10 @@ export default async function handler(req, res) {
             .eq('external_reference', order_id)
             .single();
 
+        if (fetchError && fetchError.code !== 'PGRST116') {
+            return res.status(500).json({ message: 'Error al buscar la orden', details: fetchError.message });
+        }
+
         if (!existingOrder) {
             // Crear nueva orden
             const total = items_comprados.reduce((acc, item) => acc + item.precio * item.quantity, 0) + (shippingCost || 0);
