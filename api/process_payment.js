@@ -1,10 +1,17 @@
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { v4 as uuidv4 } from 'uuid';
+import { createClient } from '@supabase/supabase-js';
 
 const client = new MercadoPagoConfig({
     accessToken: process.env.MP_ACCESS_TOKEN,
 });
 const paymentClient = new Payment(client);
+
+// 🧩 Cliente Supabase para actualizar estado de orden si ya existe
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -47,7 +54,7 @@ export default async function handler(req, res) {
         // 🏗️ Construcción del cuerpo del pago
         const paymentBody = {
             transaction_amount,
-            token: token || undefined, // null o undefined según sea necesario
+            token: token || undefined,
             description: description || 'Pago desde Sheiki',
             installments,
             payment_method_id,
@@ -74,6 +81,31 @@ export default async function handler(req, res) {
             method: payment.payment_method_id,
             amount: payment.transaction_amount,
         });
+
+        // 🔄 Actualizar estado si la orden ya existe
+        const { data: existingOrder, error: queryError } = await supabase
+            .from('ordenes')
+            .select('id')
+            .eq('external_reference', externalReference)
+            .maybeSingle();
+
+        if (queryError) {
+            console.warn('[process_payment] ⚠️ Error al buscar orden existente:', queryError.message);
+        }
+
+        if (existingOrder) {
+            console.log(`[process_payment] 🔁 Actualizando estado de orden existente (${externalReference}): ${payment.status}`);
+            const { error: updateError } = await supabase
+                .from('ordenes')
+                .update({ estado_pago: payment.status })
+                .eq('id', existingOrder.id);
+
+            if (updateError) {
+                console.error('[process_payment] ❌ Error al actualizar orden:', updateError.message);
+            } else {
+                console.log('[process_payment] ✅ Estado de orden actualizado correctamente');
+            }
+        }
 
         // 📤 Respuesta al frontend
         return res.status(200).json({
