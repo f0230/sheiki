@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StatusScreen } from '@mercadopago/sdk-react';
 import { useNavigate } from 'react-router-dom';
-import { XCircle } from 'lucide-react'; // Asegurate de tener lucide-react instalado
+import { XCircle, RefreshCw } from 'lucide-react';
 
 const getRejectionMessage = (statusDetail) => {
     switch (statusDetail) {
@@ -35,13 +35,16 @@ const getRejectionMessage = (statusDetail) => {
 const FailurePage = () => {
     const [statusDetail, setStatusDetail] = useState(null);
     const [message, setMessage] = useState(null);
+    const [metodoPago, setMetodoPago] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
         localStorage.setItem('sheikiPaymentStatus', 'failure');
 
         const detail = localStorage.getItem('status_detail');
+        const metodo = localStorage.getItem('metodo_pago');
         setStatusDetail(detail);
+        setMetodoPago(metodo);
         setMessage(getRejectionMessage(detail));
 
         return () => {
@@ -88,23 +91,41 @@ const FailurePage = () => {
                 </div>
 
                 {message && (
-                    <p className="text-sm text-gray-700 mt-3">
-                        {message}
-                    </p>
+                    <p className="text-sm text-gray-700 mt-3">{message}</p>
                 )}
 
                 <div className="mt-4 text-sm text-gray-500">
-                    Si creés que esto es un error, podés probar otro método de pago o contactarnos por WhatsApp.
+                    Si creés que esto es un error, podés intentar nuevamente o escribirnos por WhatsApp.
                 </div>
+
+                <a
+                    href="https://wa.me/59891234567?text=Hola!%20Tuve%20un%20problema%20al%20pagar%20en%20Sheiki"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-green-700 hover:underline mt-2 inline-block"
+                >
+                    📱 ¿Necesitás ayuda? Escribinos por WhatsApp
+                </a>
             </div>
 
-            <button
-                onClick={() => navigate('/pago')}
-                className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-full shadow-md transition duration-300 flex items-center gap-2"
-            >
-                <XCircle className="w-5 h-5" />
-                Volver a intentar el pago
-            </button>
+            {metodoPago !== 'ticket' && (
+                <button
+                    onClick={() => {
+                        // Restaurar carrito e info de envío si existen backups
+                        const backupCart = localStorage.getItem('backup_cart');
+                        const backupEnvio = localStorage.getItem('backup_envio');
+                        if (backupCart) localStorage.setItem('items_comprados', backupCart);
+                        if (backupEnvio) localStorage.setItem('datos_envio', backupEnvio);
+
+                        navigate('/pago');
+                    }}
+                    className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-full shadow-md transition duration-300 flex items-center gap-2 mt-2"
+                >
+                    <RefreshCw className="w-5 h-5" />
+                    Volver a intentar el pago
+                </button>
+           
+            )}
         </div>
     );
 };

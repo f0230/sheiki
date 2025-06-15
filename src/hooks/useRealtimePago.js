@@ -17,19 +17,23 @@ const useRealtimePago = ({
         });
 
         const handleRealtimePaymentUpdate = (message) => {
-            const status = message?.payload?.status;
-            const ref = message?.payload?.external_reference;
+            const { status, status_detail, external_reference } = message?.payload || {};
 
-            if (ref !== currentExternalRef) return;
+            if (external_reference !== currentExternalRef) return;
 
-            if (["approved", "pending", "in_process", "rejected"].includes(status)) {
-                const redirectStatus = status === "approved" ? "success" : status;
-                finalizeCheckout(redirectStatus, "realtime");
+            console.log(`[RealtimePago] 🎯 Estado recibido: ${status} | Detail: ${status_detail}`);
+
+            if (status === "approved") {
+                finalizeCheckout('approved', 'realtime');
+            } else if (["pending", "in_process"].includes(status)) {
+                finalizeCheckout(status, 'realtime');
+            } else if (status === "rejected") {
+                console.warn(`[RealtimePago] 🚫 Pago rechazado (${status_detail})`);
+                finalizeCheckout('rejected', 'realtime');
             } else {
-                console.log(`[RealtimePago] Estado no manejado automáticamente: ${status}`);
+                console.log(`[RealtimePago] ❔ Estado no manejado automáticamente: ${status}`);
             }
         };
-        
 
         realtimeChannel
             .on('broadcast', { event: 'payment_update' }, handleRealtimePaymentUpdate)
@@ -38,13 +42,13 @@ const useRealtimePago = ({
                     console.log(`[RealtimePago] ✅ Subscrito a ${channelName}`);
                 } else if (['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status)) {
                     console.error(`[RealtimePago] ❌ Error en canal: ${channelName}`, err);
-                    setError('No se pudo conectar a Mercado Pago en tiempo real. Verifica manualmente tu pago.');
+                    setError('No se pudo conectar con Mercado Pago en tiempo real.');
                 }
             });
 
         return () => {
             supabase.removeChannel(realtimeChannel)
-                .then(status => console.log(`[RealtimePago] Canal cerrado: ${status}`))
+                .then(status => console.log(`[RealtimePago] 🧹 Canal cerrado: ${status}`))
                 .catch(err => console.error('[RealtimePago] Error al cerrar canal:', err));
         };
     }, [paymentProcessing, currentExternalRef, isCheckoutFinalized, finalizeCheckout, setError]);

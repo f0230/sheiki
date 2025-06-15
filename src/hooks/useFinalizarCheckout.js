@@ -1,4 +1,3 @@
-// hooks/useFinalizarCheckout.js
 import { useCallback } from 'react';
 
 const useFinalizarCheckout = ({
@@ -13,7 +12,7 @@ const useFinalizarCheckout = ({
     shippingCost,
     currentExternalRef,
     shippingData,
-    items // ✅ agregado directamente
+    items
 }) => {
     const finalizeCheckout = useCallback(
         async (estado_pago = 'approved', tipo_pago = 'mercadopago') => {
@@ -34,15 +33,8 @@ const useFinalizarCheckout = ({
 
                     const res = await fetch('/api/process-transfer', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            order_id,
-                            datos_envio,
-                            items_comprados,
-                            shippingCost
-                        })
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order_id, datos_envio, items_comprados, shippingCost })
                     });
 
                     if (!res.ok) {
@@ -52,23 +44,32 @@ const useFinalizarCheckout = ({
                     }
                 }
 
-                // Limpiar y redirigir
+                // Limpieza de estado y localStorage
                 setIsCheckoutFinalized(true);
                 setPaymentProcessing(false);
                 setPreferenceId(null);
                 setConfirmed(false);
                 clearCart();
+                localStorage.removeItem('payment_id');
+                localStorage.removeItem('datos_envio');
+                localStorage.removeItem('items_comprados');
+                localStorage.removeItem('external_reference');
 
-                if (estado_pago === 'approved') {
+                // Redirección según el estado del pago
+                const normalizedStatus = estado_pago.toLowerCase();
+
+                if (normalizedStatus === 'approved') {
                     navigate('/success');
-                } else if (estado_pago === 'pending_transferencia' || estado_pago === 'pending') {
+                } else if (['pending_transferencia', 'pending', 'in_process'].includes(normalizedStatus)) {
                     navigate('/pending');
                 } else {
                     navigate('/failure');
                 }
+
             } catch (err) {
                 console.error('❌ Error al finalizar checkout:', err);
                 setPaymentProcessing(false);
+                setError?.('Ocurrió un error al finalizar tu pedido. Intenta nuevamente.');
             }
         },
         [

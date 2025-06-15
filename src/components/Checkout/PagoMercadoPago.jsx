@@ -58,7 +58,10 @@ const PagoMercadoPago = ({
             };
 
             console.log('[🧾 PagoMercadoPago] Payload enriquecido:', enrichedFormData);
-
+            
+            localStorage.setItem('backup_cart', localStorage.getItem('items_comprados'));
+            localStorage.setItem('backup_envio', localStorage.getItem('datos_envio'));
+            
             const res = await fetch('/api/process_payment', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
