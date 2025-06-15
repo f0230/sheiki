@@ -25,17 +25,21 @@ const PagoMercadoPago = ({
             </p>
 
             <Payment
-                key={preferenceId} // Se usa la key para forzar el reinicio del componente si cambia la preferencia
-                initialization={{
-                    amount,
-                    preferenceId,
-                }}
+                key={preferenceId}
+                initialization={{ amount, preferenceId }}
                 customization={{
                     paymentMethods: {
                         mercadoPago: 'all',
-                        
+                        maxInstallments: 6,
                     },
                     redirectMode: 'modal',
+                    defaultPaymentOption: {
+                        walletForm: true,
+                    },
+                    visual: {
+                        hideFormTitle: true,
+                        hidePaymentButton: true,
+                    },
                 }}
                 onSubmit={onSubmit}
                 onError={(mpError) => {
@@ -45,7 +49,13 @@ const PagoMercadoPago = ({
                     setCurrentExternalRef(null);
                     setPaymentProcessing(false);
                 }}
-                onReady={() => console.log("[Pago] ✅ Brick de Pago de Mercado Pago listo.")}
+                onReady={() => console.log('[Pago] ✅ Brick de Pago de Mercado Pago listo.')}
+                onClose={() => {
+                    console.warn('[Brick] 🛑 El usuario cerró el modal sin pagar');
+                    if (typeof window.setPaymentProcessing === 'function') {
+                        window.setPaymentProcessing(false);
+                    }
+                }}
             />
         </div>
     );
