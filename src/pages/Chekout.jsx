@@ -25,6 +25,7 @@ const CheckoutPage = () => {
   const { items, clearCart } = useCart();
   const [metodoPago, setMetodoPago] = useState('mercadopago');
   const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   // --- LÓGICA DEL LOCALSTORAGE ---
   const [shippingData, setShippingData] = useState(() => {
@@ -275,6 +276,8 @@ const CheckoutPage = () => {
             setCurrentExternalRef={setCurrentExternalRef}
             setPaymentProcessing={setPaymentProcessing}
             finalizeCheckout={finalizeCheckout} 
+            setToastMessage={setToastMessage}         // ✅
+            setToastVisible={setToastVisible}  
           />
         )}
 

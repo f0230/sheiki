@@ -9,7 +9,9 @@ const PagoMercadoPago = ({
     setPreferenceId,
     setCurrentExternalRef,
     setPaymentProcessing,
-    finalizeCheckout
+    finalizeCheckout,
+    setToastMessage,  // ✅
+    setToastVisible   // ✅
 }) => {
     const handlePaymentSubmit = async ({ formData }) => {
         try {
