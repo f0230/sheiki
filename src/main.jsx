@@ -10,6 +10,11 @@ import AdminLayout from './layouts/AdminLayout';
 
 // Configurar Mercado Pago
 
+import { Payment, initMercadoPago } from '@mercadopago/sdk-react';
+
+
+initMercadoPago(import.meta.env.VITE_MP_PUBLIC_KEY, { locale: 'es-UY' });
+
 
 // Lazy load: páginas públicas
 const Home = lazy(() => import('./pages/Home.jsx'));

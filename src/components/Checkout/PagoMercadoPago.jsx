@@ -1,8 +1,5 @@
 import React from 'react';
-import { Payment, initMercadoPago } from '@mercadopago/sdk-react';
 
-
-initMercadoPago(import.meta.env.VITE_MP_PUBLIC_KEY, { locale: 'es-UY' });
 
 
 const PagoMercadoPago = ({
@@ -17,12 +14,29 @@ const PagoMercadoPago = ({
 
     const handlePaymentSubmit = async ({ formData }) => {
         try {
-            console.log('[PagoMercadoPago] Enviando formData al backend:', formData);
+            // Recuperar datos necesarios desde localStorage
+            const shippingData = JSON.parse(localStorage.getItem('datos_envio'));
+            const items = JSON.parse(localStorage.getItem('items_comprados'));
+            const externalReference = `orden-${Date.now()}`;
+
+            // Enriquecer el formData con metadata
+            const enrichedFormData = {
+                ...formData,
+                description: 'Pago Sheiki',
+                metadata: {
+                    ...shippingData,
+                    shipping_cost: Number(shippingData?.shippingCost || 0),
+                    items,
+                    externalReference, // ⚠️ Este campo es obligatorio para tu webhook
+                }
+            };
+
+            console.log('[PagoMercadoPago] Enviando enrichedFormData al backend:', enrichedFormData);
 
             const res = await fetch('/api/process_payment', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(enrichedFormData),
             });
 
             const data = await res.json();
@@ -36,13 +50,19 @@ const PagoMercadoPago = ({
                 return;
             }
 
+            // ✅ Guardar paymentId para StatusScreen Brick
+            if (data?.id) {
+                localStorage.setItem('payment_id', data.id);
+            }
+
             // Redireccionar si es ticket (Abitab/Redpagos)
             if (data.status === 'pending' && data.external_resource_url) {
                 console.log('📄 Redirigiendo a instrucciones de pago:', data.external_resource_url);
                 window.location.href = data.external_resource_url;
             }
 
-            // Si es aprobado, no necesita redirección manual (webhook se encarga)
+            // Si el pago es aprobado, se maneja por webhook + realtime
+
         } catch (error) {
             console.error('❌ Excepción en handlePaymentSubmit:', error);
             setError('Error al procesar el pago. Por favor, intentá nuevamente.');
@@ -51,6 +71,7 @@ const PagoMercadoPago = ({
             setPaymentProcessing(false);
         }
     };
+    
 
     
 

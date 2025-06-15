@@ -21,31 +21,46 @@ export default async function handler(req, res) {
             metadata,
         } = req.body;
 
-        const idempotencyKey = uuidv4();
+        if (!transaction_amount || !payment_method_id || !payer?.email) {
+            return res.status(400).json({
+                error: 'Faltan campos obligatorios como transaction_amount, payment_method_id o payer.email',
+            });
+        }
+
+        // Si metadata no trae externalReference, lo generamos igual
+        const externalReference = metadata?.externalReference || `orden-${Date.now()}`;
 
         const paymentBody = {
             transaction_amount,
             token,
-            description,
-            installments,
+            description: description || 'Pago desde Sheiki',
+            installments: installments || 1,
             payment_method_id,
             issuer_id,
             payer,
-            metadata, // Incluye items, email, datos de envío
+            metadata: {
+                ...metadata,
+                externalReference,
+            },
+            external_reference: externalReference, // 👈 clave para vincular en el webhook
         };
+
+        const idempotencyKey = uuidv4();
 
         const payment = await paymentClient.create({
             body: paymentBody,
             requestOptions: { idempotencyKey },
         });
 
-        // Respuesta: redirigir si tiene external_resource_url
+        console.log('[process_payment] ✅ Pago creado:', payment.id);
+
         return res.status(200).json({
             status: payment.status,
             id: payment.id,
-            external_reference: payment.external_reference,
-            external_resource_url: payment.transaction_details.external_resource_url,
+            external_reference: externalReference,
+            external_resource_url: payment.transaction_details?.external_resource_url || null,
         });
+
     } catch (err) {
         console.error('[process_payment] ❌ Error:', err);
         return res.status(500).json({ error: 'Error al procesar el pago', details: err.message });

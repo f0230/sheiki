@@ -1,74 +1,55 @@
 import React, { useEffect } from 'react';
+import { StatusScreen } from '@mercadopago/sdk-react';
 import { useCart } from '../store/useCart';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 
 const PendingPage = () => {
     const { clearCart } = useCart();
 
     useEffect(() => {
-        console.log("[PendingPage] Estableciendo sheikiPaymentStatus a 'pending'");
+        console.log('[PendingPage] Estado: pending');
         localStorage.setItem('sheikiPaymentStatus', 'pending');
 
-        console.log("[PendingPage] Limpiando carrito y datos locales.");
         clearCart();
         localStorage.removeItem('datos_envio');
         localStorage.removeItem('items_comprados');
+
+        return () => {
+            // Desmontar instancia del Brick al salir
+            if (window.statusScreenBrickController) {
+                window.statusScreenBrickController.unmount();
+                console.log('[PendingPage] 🧹 Brick desmontado');
+            }
+        };
     }, [clearCart]);
 
-    return (
-        <div className="min-h-screen bg-yellow-50 flex flex-col items-center justify-center text-center px-4 py-8">
-            <motion.div
-                initial={{ opacity: 0, y: -50, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{
-                    duration: 0.6,
-                    type: 'spring',
-                    stiffness: 120,
-                    delay: 0.2
-                }}
-                className="bg-white p-8 md:p-12 rounded-xl shadow-2xl max-w-lg w-full"
-            >
-                <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.5, duration: 0.4, type: 'spring', stiffness: 150 }}
-                >
-                    <svg
-                        className="text-yellow-500 w-24 h-24 mx-auto mb-6 animate-pulse"
-                        fill="none"
-                        strokeWidth="2"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </motion.div>
+    const initialization = {
+        paymentId: localStorage.getItem('payment_id'), // Asegurate de guardar esto en handlePaymentSubmit
+    };
 
-                <h1 className="text-3xl md:text-4xl font-bold text-yellow-700 mb-4">
-                    Pago pendiente
-                </h1>
-                <p className="text-lg md:text-xl text-gray-700 max-w-md mx-auto mb-8">
-                    Hemos registrado tu orden, pero tu pago aún está pendiente de confirmación.
-                    Una vez realizado el pago en Redpagos o Abitab, te notificaremos.
-                </p>
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.8, duration: 0.5 }}
-                >
-                    <Link
-                        to="/"
-                        className="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-3 px-10 rounded-lg transition duration-300 ease-in-out text-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50"
-                    >
-                        Volver a la tienda
-                    </Link>
-                </motion.div>
-                <p className="text-xs text-gray-500 mt-8">
-                    Si necesitas ayuda, escribinos por <Link to="/contacto" className="text-yellow-600 hover:underline">aquí</Link>.
-                </p>
-            </motion.div>
+    const customization = {
+        backUrls: {
+            return: 'https://www.sheiki.uy',       // ✅ Link para volver a la tienda
+            error: 'https://www.sheiki.uy/failure' // ✅ Link en caso de error
+        },
+        texts: {
+            ctaReturnLabel: 'Volver a la tienda',
+            ctaGeneralErrorLabel: 'Intentar de nuevo',
+        },
+    };
+
+    const onReady = () => console.log('[PendingPage] ✅ StatusScreen Brick listo');
+    const onError = (error) => console.error('[PendingPage] ❌ Error en StatusScreen:', error);
+
+    return (
+        <div className="min-h-screen bg-yellow-50 flex items-center justify-center p-4">
+            <div id="statusScreenBrick_container" className="w-full max-w-xl">
+                <StatusScreen
+                    initialization={initialization}
+                    customization={customization}
+                    onReady={onReady}
+                    onError={onError}
+                />
+            </div>
         </div>
     );
 };
