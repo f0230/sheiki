@@ -77,7 +77,12 @@ const useFinalizarCheckout = ({
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${import.meta.env.VITE_ADMIN_SECRET_KEY}`
                     },
-                    body: JSON.stringify({ order_id: externalRef })
+                    body: JSON.stringify({
+                        order_id: externalRef,
+                        items_comprados: itemsComprados,
+                        datos_envio: shippingData,
+                        shippingCost
+                    })
                 });
 
                 const result = await response.json();
@@ -90,7 +95,7 @@ const useFinalizarCheckout = ({
                 console.error('❌ Excepción al procesar transferencia:', err.message);
             }
         }
-
+          
         // 🔁 Redirección según estado
         if (status === 'success') {
             navigate('/success', { replace: true });

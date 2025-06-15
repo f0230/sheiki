@@ -19,48 +19,59 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { order_id } = req.body;
+        const { order_id, items_comprados, datos_envio, shippingCost } = req.body;
 
-        if (!order_id) {
-            return res.status(400).json({ message: 'Falta el ID de la orden (order_id)' });
+        if (!order_id || !items_comprados || !datos_envio) {
+            return res.status(400).json({ message: 'Faltan datos requeridos (order_id, items_comprados, datos_envio)' });
         }
 
-        // Buscar la orden
-        const { data: order, error: fetchError } = await supabase
+        // Buscar si la orden ya existe
+        const { data: existingOrder, error: fetchError } = await supabase
             .from('ordenes')
             .select('*')
             .eq('external_reference', order_id)
             .single();
 
-        if (fetchError || !order) {
-            return res.status(404).json({ message: `Orden con referencia "${order_id}" no encontrada.` });
+        if (!existingOrder) {
+            // Crear nueva orden
+            const total = items_comprados.reduce((acc, item) => acc + item.precio * item.quantity, 0) + (shippingCost || 0);
+
+            const { error: insertError } = await supabase.from('ordenes').insert([
+                {
+                    external_reference: order_id,
+                    items_comprados,
+                    estado_pago: 'pending_transferencia',
+                    total,
+                    costo_envio: shippingCost || 0,
+                    envio_gratis: (shippingCost || 0) === 0,
+                    nombre: datos_envio.nombre,
+                    telefono: datos_envio.telefono,
+                    direccion: datos_envio.direccion,
+                    departamento: datos_envio.departamento,
+                    tipo_entrega: datos_envio.tipoEntrega,
+                    email_usuario: datos_envio.email,
+                    fecha: new Date().toISOString(),
+                },
+            ]);
+
+            if (insertError) {
+                return res.status(500).json({ message: 'Error al crear la orden', details: insertError.message });
+            }
+
+            console.log(`🧾 Orden ${order_id} creada con éxito.`);
         }
 
-        if (order.estado_pago !== 'pending_transferencia') {
-            return res.status(409).json({ message: `La orden ya tiene el estado "${order.estado_pago}". No se puede procesar.` });
-        }
-
-        // Parsear items_comprados
-        let parsedItems;
-        try {
-            parsedItems = typeof order.items_comprados === 'string'
-                ? JSON.parse(order.items_comprados)
-                : order.items_comprados;
-        } catch (parseErr) {
-            return res.status(500).json({ message: 'Error al interpretar los items comprados.', details: parseErr.message });
-        }
-
-        console.log(`🛒 Procesando orden ${order_id} - Deducción de stock...`);
-        const stockResult = await deductStock(parsedItems);
+        // Deducción de stock
+        const stockResult = await deductStock(items_comprados);
 
         if (!stockResult.success) {
-            return res.status(500).json({ message: 'Error crítico al deducir el stock.', details: stockResult.error });
+            return res.status(500).json({ message: 'Error al deducir el stock.', details: stockResult.error });
         }
 
         const { error: updateError } = await supabase
             .from('ordenes')
             .update({ estado_pago: 'approved' })
-            .eq('id', order.id);
+            .eq('external_reference', order_id);
 
         if (updateError) {
             throw new Error(`Error al actualizar el estado de la orden: ${updateError.message}`);
@@ -68,7 +79,6 @@ export default async function handler(req, res) {
 
         console.log(`✅ Orden ${order_id} procesada correctamente.`);
         return res.status(200).json({ message: `Orden ${order_id} procesada exitosamente.` });
-
     } catch (error) {
         console.error('❌ Error en el servidor al procesar transferencia:', error);
         return res.status(500).json({ message: 'Error en el servidor', details: error.message });
