@@ -287,10 +287,15 @@ const CheckoutPage = () => {
             </p>
             <button
               className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
-              onClick={() => {
-                setToastVisible(true);
-                finalizeCheckout('pending_transferencia', 'manual_transfer');
-                setTimeout(() => setToastVisible(false), 5000);
+              onClick={async () => {
+                try {
+                  setToastVisible(true);
+                  await finalizeCheckout('pending_transferencia', 'manual_transfer');
+                } catch (error) {
+                  console.error("❌ Error al confirmar transferencia:", error);
+                } finally {
+                  setTimeout(() => setToastVisible(false), 5000);
+                }
               }}
             >
               Confirmar pedido por transferencia
