@@ -22,13 +22,14 @@ const useRealtimePago = ({
 
             if (ref !== currentExternalRef) return;
 
-            if (["approved", "pending", "in_process"].includes(status)) {
+            if (["approved", "pending", "in_process", "rejected"].includes(status)) {
                 const redirectStatus = status === "approved" ? "success" : status;
                 finalizeCheckout(redirectStatus, "realtime");
             } else {
                 console.log(`[RealtimePago] Estado no manejado automáticamente: ${status}`);
             }
         };
+        
 
         realtimeChannel
             .on('broadcast', { event: 'payment_update' }, handleRealtimePaymentUpdate)
