@@ -58,14 +58,18 @@ const CheckoutPage = () => {
   const [isCheckoutFinalized, setIsCheckoutFinalized] = useState(false);
 
   const isEmailValid = shippingData.email.includes('@') && shippingData.email.includes('.');
+  const isTicket = metodoPago === 'ticket';
+
   const isFormValid = Object.values({
     nombre: shippingData.nombre,
     telefono: shippingData.telefono,
     email: shippingData.email,
+    ci: isTicket ? shippingData.ci : 'dummy', // fuerza validación solo si es ticket
     departamento: shippingData.departamento,
     direccion: shippingData.tipoEntrega === 'domicilio' ? shippingData.direccion : 'N/A',
     tipoEntrega: shippingData.tipoEntrega
-  }).every(value => value && String(value).trim() !== '') && isEmailValid;
+  }).every(value => value && String(value).trim() !== '') &&
+    isEmailValid;
 
   // Calcular costo de envío
   useEffect(() => {

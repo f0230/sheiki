@@ -67,6 +67,16 @@ const FormularioEnvio = ({
                     onChange={handleChange}
                     className="border p-2 rounded disabled:bg-gray-100"
                 />
+                <input
+                    type="text"
+                    name="ci"
+                    placeholder="Cédula de identidad (solo para pagos en efectivo)"
+                    value={shippingData.ci || ''}
+                    onChange={handleChange}
+                    className="border p-2 rounded disabled:bg-gray-100 mt-2"
+                />
+
+
                 <select
                     name="departamento" // <<< Añadido
                     value={shippingData.departamento}
