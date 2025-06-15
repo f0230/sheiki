@@ -44,32 +44,38 @@ const useFinalizarCheckout = ({
                     }
                 }
 
-                // Limpieza de estado y localStorage
+                // 🧹 Limpieza de estado y almacenamiento
                 setIsCheckoutFinalized(true);
                 setPaymentProcessing(false);
                 setPreferenceId(null);
                 setConfirmed(false);
                 clearCart();
+
                 localStorage.removeItem('payment_id');
                 localStorage.removeItem('datos_envio');
                 localStorage.removeItem('items_comprados');
                 localStorage.removeItem('external_reference');
 
-                // Redirección según el estado del pago
-                const normalizedStatus = estado_pago.toLowerCase();
+                // 🔁 Redirección robusta
+                const normalizedStatus = (estado_pago || '').toLowerCase();
 
                 if (normalizedStatus === 'approved') {
                     navigate('/success');
-                } else if (['pending_transferencia', 'pending', 'in_process'].includes(normalizedStatus)) {
+                } else if (['pending', 'in_process', 'pending_transferencia'].includes(normalizedStatus)) {
                     navigate('/pending');
+                } else if (['rejected', 'cancelled', 'failure'].includes(normalizedStatus)) {
+                    navigate('/failure');
                 } else {
+                    console.warn(`⚠️ Estado inesperado: ${estado_pago}. Redirigiendo a /failure`);
                     navigate('/failure');
                 }
 
             } catch (err) {
                 console.error('❌ Error al finalizar checkout:', err);
                 setPaymentProcessing(false);
-                setError?.('Ocurrió un error al finalizar tu pedido. Intenta nuevamente.');
+                if (typeof setError === 'function') {
+                    setError('Ocurrió un error al finalizar tu pedido. Intenta nuevamente.');
+                }
             }
         },
         [
