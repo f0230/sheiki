@@ -286,28 +286,38 @@ const CheckoutPage = () => {
             <p className="text-sm mb-4">
               Una vez realizado el pago, presioná el botón para confirmar tu pedido.
             </p>
+
             <button
               className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition"
               onClick={async () => {
                 try {
                   if (!confirmed) {
-                    console.warn("⚠️ No se confirmaron los datos de envío.");
+                    console.warn("⚠️ Datos no confirmados");
                     return;
                   }
 
-                  // Verificación defensiva
-                  if (items.length === 0 || !shippingData?.email || !shippingData?.nombre) {
-                    console.error("❌ Datos de envío incompletos:", shippingData);
+                  if (!Array.isArray(items) || items.length === 0) {
+                    console.error("❌ No hay productos en el carrito.");
                     return;
                   }
 
-                  console.log("📤 Guardando datos en localStorage", {
-                    datos_envio: { ...shippingData, shippingCost },
-                    items_comprados: items
+                  const datos_envio = {
+                    ...shippingData,
+                    shippingCost: Number(shippingCost)
+                  };
+
+                  if (!datos_envio.email || !datos_envio.nombre || !datos_envio.telefono) {
+                    console.error("❌ Datos de envío incompletos:", datos_envio);
+                    return;
+                  }
+
+                  console.log("📤 Guardando en localStorage:", {
+                    items_comprados: items,
+                    datos_envio
                   });
 
-                  localStorage.setItem('datos_envio', JSON.stringify({ ...shippingData, shippingCost }));
                   localStorage.setItem('items_comprados', JSON.stringify(items));
+                  localStorage.setItem('datos_envio', JSON.stringify(datos_envio));
 
                   setToastVisible(true);
                   await finalizeCheckout('pending_transferencia', 'manual_transfer');
