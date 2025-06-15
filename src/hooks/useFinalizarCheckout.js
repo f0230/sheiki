@@ -24,19 +24,19 @@ const useFinalizarCheckout = ({
             const datos_envio = JSON.parse(localStorage.getItem('datos_envio'));
 
             try {
+                // Si es transferencia bancaria, registrar manualmente
                 if (tipo_pago === 'manual_transfer') {
                     const res = await fetch('/api/process-transfer', {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json',
-                            Authorization: `Bearer ${import.meta.env.VITE_ADMIN_SECRET_KEY}`,
+                            'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
                             order_id,
                             items_comprados,
                             datos_envio,
-                            shippingCost,
-                        }),
+                            shippingCost
+                        })
                     });
 
                     if (!res.ok) {
@@ -46,12 +46,21 @@ const useFinalizarCheckout = ({
                     }
                 }
 
+                // Finaliza checkout en frontend
                 setIsCheckoutFinalized(true);
                 setPaymentProcessing(false);
                 setPreferenceId(null);
                 setConfirmed(false);
                 clearCart();
-                navigate('/success');
+
+                // Redirige según estado
+                if (estado_pago === 'approved') {
+                    navigate('/success');
+                } else if (estado_pago === 'pending' || estado_pago === 'pending_transferencia') {
+                    navigate('/pending');
+                } else {
+                    navigate('/failure');
+                }
             } catch (err) {
                 console.error('❌ Error al finalizar checkout:', err);
                 setPaymentProcessing(false);

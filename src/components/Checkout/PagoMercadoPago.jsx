@@ -1,9 +1,9 @@
-import React from 'react';
+// /components/Checkout/PagoMercadoPago.jsx
+
+import React, { useEffect } from 'react';
 import { Payment, initMercadoPago } from '@mercadopago/sdk-react';
 
-
 initMercadoPago(import.meta.env.VITE_MP_PUBLIC_KEY, { locale: 'es-UY' });
-
 
 const PagoMercadoPago = ({
     preferenceId,
@@ -14,6 +14,44 @@ const PagoMercadoPago = ({
     setCurrentExternalRef,
     setPaymentProcessing
 }) => {
+    // Guardar referencia al controlador global
+    useEffect(() => {
+        window.setPaymentProcessing = setPaymentProcessing;
+    }, [setPaymentProcessing]);
+
+    // Función personalizada para crear el pago
+    const createPayment = () => {
+        if (!window.paymentBrickController) {
+            console.error('❌ paymentBrickController no está listo.');
+            return;
+        }
+
+        window.paymentBrickController
+            .getFormData()
+            .then(({ formData }) => {
+                console.log('[🧾 Sheiki] Enviando pago manual...');
+                fetch('/api/process_payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                }).then(res => {
+                    if (!res.ok) throw new Error('Error al procesar el pago');
+                    return res.json();
+                }).then(data => {
+                    console.log('✅ Pago enviado:', data);
+                }).catch(error => {
+                    console.error('❌ Error al enviar pago:', error);
+                    setError('No se pudo completar el pago. Intentalo de nuevo.');
+                });
+            })
+            .catch((error) => {
+                console.error('❌ Error al obtener formData:', error);
+                setError('Error al procesar el formulario de pago.');
+            });
+    };
+
     return (
         <div className="bg-white text-black p-6 rounded-lg mt-8">
             <div className="flex justify-between items-center mb-4">
@@ -57,6 +95,15 @@ const PagoMercadoPago = ({
                     }
                 }}
             />
+
+            {/* Botón personalizado estilo Sheiki */}
+            <button
+                type="button"
+                onClick={createPayment}
+                className="mt-6 bg-black text-white w-full py-3 rounded-full text-lg font-semibold hover:bg-gray-800 transition"
+            >
+                Confirmar y pagar
+            </button>
         </div>
     );
 };

@@ -2,7 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Inicializa Supabase aquí para que la función sea autónoma
+// Inicializa Supabase con claves privadas de entorno
 const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -10,24 +10,25 @@ const supabase = createClient(
 
 /**
  * Deduce el stock para una lista de items comprados.
- * @param {Array} items - El array de items de la orden.
- * @returns {Promise<{success: boolean, error?: string}>}
+ * @param {Array} items - Lista de ítems con { id, color, talle, quantity }
+ * @returns {Promise<{ success: boolean, error?: string }>}
  */
 export const deductStock = async (items) => {
-    if (!items || !Array.isArray(items)) {
-        console.error('Error de stock: "items" no es un array válido.');
-        return { success: false, error: 'Items inválidos.' };
+    if (!Array.isArray(items) || items.length === 0) {
+        console.error('❌ deductStock: items inválidos o vacíos');
+        return { success: false, error: 'Items inválidos o vacíos' };
     }
 
     for (const item of items) {
-        // Asegúrate de que los campos necesarios existen
         const { id, color, talle, quantity } = item;
+
         if (!id || !color || !talle || !quantity) {
-            console.error('⚠️ Item con datos incompletos para actualizar stock:', item);
-            continue; // Salta este item si no tiene los datos necesarios
+            console.warn('⚠️ Item incompleto, se omite:', item);
+            continue;
         }
 
         try {
+            // Buscar la variante exacta
             const { data: variante, error: fetchError } = await supabase
                 .from('variantes')
                 .select('id, stock')
@@ -37,11 +38,11 @@ export const deductStock = async (items) => {
                 .single();
 
             if (fetchError || !variante) {
-                console.error('⚠️ Variante no encontrada para descontar stock:', { id, color, talle }, fetchError);
-                continue; // Si no se encuentra la variante, continúa con el siguiente item
+                console.warn('⚠️ Variante no encontrada para descontar stock:', { id, color, talle });
+                continue;
             }
 
-            const nuevoStock = Math.max(variante.stock - quantity, 0);
+            const nuevoStock = Math.max(0, variante.stock - quantity);
 
             const { error: updateError } = await supabase
                 .from('variantes')
@@ -49,14 +50,14 @@ export const deductStock = async (items) => {
                 .eq('id', variante.id);
 
             if (updateError) {
-                console.error('❌ Error actualizando stock:', updateError);
-                // Podrías decidir si quieres detener todo el proceso o solo registrar el error
-            } else {
-                console.log(`✅ Stock actualizado: variante ID ${variante.id} a ${nuevoStock} unidades.`);
+                console.error(`❌ Error actualizando stock de variante ${variante.id}:`, updateError);
+                return { success: false, error: updateError.message };
             }
 
-        } catch (e) {
-            console.error('❌ Excepción catastrófica actualizando stock:', e);
+            console.log(`✅ Stock actualizado: ID ${variante.id}, nuevo stock: ${nuevoStock}`);
+        } catch (err) {
+            console.error('❌ Excepción grave al deducir stock:', err);
+            return { success: false, error: err.message };
         }
     }
 

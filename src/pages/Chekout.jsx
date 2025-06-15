@@ -18,7 +18,7 @@ import useGenerarPreferencia from '../hooks/useGenerarPreferencia';
 import useFinalizarCheckout from '../hooks/useFinalizarCheckout';
 import useRealtimePago from '../hooks/useRealtimePago';
 
-const LOCAL_STORAGE_KEY = 'shippingData';
+const LOCAL_STORAGE_KEY = 'shippingData';transferencia
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -118,7 +118,7 @@ const CheckoutPage = () => {
 
   // Submit al iniciar pago
   const handlePaymentSubmit = useCallback(async () => {
-    if (isCheckoutFinalized) return false;
+    if (isCheckoutFinalized || items.length === 0 || !shippingData?.email) return false;
     localStorage.setItem('datos_envio', JSON.stringify({ ...shippingData, shippingCost: Number(shippingCost) }));
     localStorage.setItem('items_comprados', JSON.stringify(items));
     setPaymentProcessing(true);
@@ -222,7 +222,7 @@ const CheckoutPage = () => {
                 <label className="block mt-2">
                   <input
                     type="radio"
-                    name="transferencia"
+                    name="metodoPago"
                     value="transferencia"
                     checked={metodoPago === 'transferencia'}
                     onChange={() => setMetodoPago('transferencia')}
