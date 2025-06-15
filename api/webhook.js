@@ -124,10 +124,11 @@ export default async function handler(req, res) {
 
         console.log('📄 Detalles del pago:', payment);
 
-        if (!payment || !['approved', 'pending', 'in_process'].includes(payment.status)) {
+        if (!payment || !['approved', 'pending', 'in_process', 'rejected'].includes(payment.status)) {
             console.warn(`⚠️ Estado no manejado: ${payment?.status}`);
             return res.status(200).send('Pago no procesado');
-          }
+        }
+          
 
         const externalReference =
             payment.metadata?.externalReference ||
