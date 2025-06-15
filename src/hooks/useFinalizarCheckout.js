@@ -1,5 +1,4 @@
-// /hooks/useFinalizarCheckout.js
-
+// hooks/useFinalizarCheckout.js
 import { useCallback } from 'react';
 
 const useFinalizarCheckout = ({
@@ -13,22 +12,23 @@ const useFinalizarCheckout = ({
     calculateTotal,
     shippingCost,
     currentExternalRef,
-    shippingData
+    shippingData,
+    items // ✅ agregado directamente
 }) => {
     const finalizeCheckout = useCallback(
         async (estado_pago = 'approved', tipo_pago = 'mercadopago') => {
             if (isCheckoutFinalized) return;
 
             const order_id = currentExternalRef || crypto.randomUUID();
-            const items_comprados = JSON.parse(localStorage.getItem('items_comprados'));
-            const datos_envio = JSON.parse(localStorage.getItem('datos_envio'));
+            const datos_envio = { ...shippingData, shippingCost };
+            const items_comprados = items;
 
             try {
                 if (tipo_pago === 'manual_transfer') {
-                    console.log('🧾 Enviando datos a /api/process-transfer:', {
+                    console.log('📤 Enviando datos directo a /api/process-transfer:', {
                         order_id,
-                        items_comprados,
                         datos_envio,
+                        items_comprados,
                         shippingCost
                     });
 
@@ -39,8 +39,8 @@ const useFinalizarCheckout = ({
                         },
                         body: JSON.stringify({
                             order_id,
-                            items_comprados,
                             datos_envio,
+                            items_comprados,
                             shippingCost
                         })
                     });
@@ -52,6 +52,7 @@ const useFinalizarCheckout = ({
                     }
                 }
 
+                // Limpiar y redirigir
                 setIsCheckoutFinalized(true);
                 setPaymentProcessing(false);
                 setPreferenceId(null);
@@ -79,6 +80,8 @@ const useFinalizarCheckout = ({
             clearCart,
             navigate,
             currentExternalRef,
+            shippingData,
+            items,
             shippingCost
         ]
     );

@@ -104,7 +104,8 @@ const CheckoutPage = () => {
     calculateTotal,
     shippingCost,
     currentExternalRef,
-    shippingData
+    shippingData,
+    items
   });
 
   // Hook para realtime de pagos
@@ -291,34 +292,6 @@ const CheckoutPage = () => {
               className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition"
               onClick={async () => {
                 try {
-                  if (!confirmed) {
-                    console.warn("⚠️ Datos no confirmados");
-                    return;
-                  }
-
-                  if (!Array.isArray(items) || items.length === 0) {
-                    console.error("❌ No hay productos en el carrito.");
-                    return;
-                  }
-
-                  const datos_envio = {
-                    ...shippingData,
-                    shippingCost: Number(shippingCost)
-                  };
-
-                  if (!datos_envio.email || !datos_envio.nombre || !datos_envio.telefono) {
-                    console.error("❌ Datos de envío incompletos:", datos_envio);
-                    return;
-                  }
-
-                  console.log("📤 Guardando en localStorage:", {
-                    items_comprados: items,
-                    datos_envio
-                  });
-
-                  localStorage.setItem('items_comprados', JSON.stringify(items));
-                  localStorage.setItem('datos_envio', JSON.stringify(datos_envio));
-
                   setToastVisible(true);
                   await finalizeCheckout('pending_transferencia', 'manual_transfer');
                 } catch (error) {
