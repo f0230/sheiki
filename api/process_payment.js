@@ -24,14 +24,14 @@ export default async function handler(req, res) {
             metadata,
         } = req.body;
 
-        // 🛑 Validación básica de campos requeridos
+        // 🧪 Validaciones básicas
         if (!transaction_amount || !payment_method_id || !payer?.email) {
             return res.status(400).json({
                 error: 'Faltan campos obligatorios: transaction_amount, payment_method_id o payer.email',
             });
         }
 
-        // 🛑 Validación defensiva para metadata
+        // 📦 Validación de metadata e ítems
         if (!metadata || typeof metadata !== 'object') {
             return res.status(400).json({ error: 'Metadata inválida o ausente' });
         }
@@ -41,16 +41,17 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Items de la orden faltan o son inválidos' });
         }
 
+        // 🧾 Referencia externa única
         const externalReference = metadata.externalReference || `orden-${Date.now()}`;
 
-        // 🧱 Construcción del cuerpo de pago
+        // 🏗️ Construcción del cuerpo del pago
         const paymentBody = {
             transaction_amount,
-            token: token || null,
+            token: token || undefined, // null o undefined según sea necesario
             description: description || 'Pago desde Sheiki',
             installments,
             payment_method_id,
-            issuer_id,
+            issuer_id: issuer_id || undefined,
             payer,
             metadata: {
                 ...metadata,
@@ -61,22 +62,30 @@ export default async function handler(req, res) {
 
         const idempotencyKey = uuidv4();
 
+        // 🚀 Crear el pago con Mercado Pago
         const payment = await paymentClient.create({
             body: paymentBody,
             requestOptions: { idempotencyKey },
         });
 
-        console.log(`[process_payment] ✅ Pago creado con ID: ${payment.id} - Estado: ${payment.status}`);
+        console.log(`[process_payment] ✅ Pago creado:`, {
+            id: payment.id,
+            status: payment.status,
+            method: payment.payment_method_id,
+            amount: payment.transaction_amount,
+        });
 
+        // 📤 Respuesta al frontend
         return res.status(200).json({
             status: payment.status,
+            status_detail: payment.status_detail,
             id: payment.id,
             external_reference: externalReference,
             external_resource_url: payment.transaction_details?.external_resource_url || null,
-            status_detail: payment.status_detail,
         });
+
     } catch (err) {
-        console.error('[process_payment] ❌ Error al crear pago:', {
+        console.error('[process_payment] ❌ Error inesperado al crear el pago:', {
             message: err.message,
             stack: err.stack,
         });

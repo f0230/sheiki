@@ -4,23 +4,36 @@ import { Payment } from '@mercadopago/sdk-react';
 const PagoMercadoPago = ({
     preferenceId,
     amount,
+    onSubmit,
     setError,
     setPreferenceId,
     setCurrentExternalRef,
     setPaymentProcessing
 }) => {
+
     const handlePaymentSubmit = async ({ formData }) => {
         try {
+            // Ejecutar lógica previa (guardar localStorage, validar stock, etc.)
+            if (typeof onSubmit === 'function') {
+                const ok = await onSubmit();
+                if (!ok) return;
+            }
+
+            // Recuperar datos desde localStorage
             const shippingData = JSON.parse(localStorage.getItem('datos_envio')) || {};
             const items = JSON.parse(localStorage.getItem('items_comprados')) || [];
             const externalReference = `orden-${Date.now()}`;
-            const email = shippingData?.email || 'no-reply@sheiki.uy';
-            const ci = shippingData?.ci || '00000000';
 
-            // Validación mínima
+            const email = shippingData.email || 'no-reply@sheiki.uy';
+            const ci = shippingData.ci || '00000000';
+
+            // Validaciones defensivas
             if (!Array.isArray(items) || items.length === 0) {
                 throw new Error('Carrito vacío o inválido.');
             }
+
+            // Guardar externalRef para futuros usos (webhook, tracking, etc.)
+            localStorage.setItem('external_reference', externalReference);
 
             const enrichedFormData = {
                 ...formData,
@@ -41,7 +54,7 @@ const PagoMercadoPago = ({
                 }
             };
 
-            console.log('[PagoMercadoPago] Enviando enrichedFormData al backend:', enrichedFormData);
+            console.log('[💳 PagoMercadoPago] Enviando enrichedFormData al backend:', enrichedFormData);
 
             const res = await fetch('/api/process_payment', {
                 method: 'POST',
@@ -65,11 +78,13 @@ const PagoMercadoPago = ({
                 localStorage.setItem('payment_id', data.id);
             }
 
-            // Redirigir si es ticket (Abitab/Redpagos)
+            // Si es un ticket, redirige a instrucciones (Abitab, Redpagos)
             if (data.status === 'pending' && data.external_resource_url) {
                 console.log('📄 Redirigiendo a instrucciones de pago:', data.external_resource_url);
                 window.location.href = data.external_resource_url;
             }
+
+            // Si el pago es aprobado, el webhook y realtime se encargan de redirigir
 
         } catch (error) {
             console.error('❌ Excepción en handlePaymentSubmit:', error);
@@ -81,16 +96,16 @@ const PagoMercadoPago = ({
     };
 
     return (
-        <div className="bg-white text-black p-6 rounded-lg mt-8">
+        <div className="bg-white text-black p-6 rounded-lg mt-8 shadow-md">
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Completa tu pago</h2>
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                    💳 Completa tu pago
+                </h2>
             </div>
+
             <Payment
                 key={preferenceId}
-                initialization={{
-                    amount,
-                    preferenceId
-                }}
+                initialization={{ amount, preferenceId }}
                 customization={{
                     paymentMethods: {
                         mercadoPago: 'all',
@@ -115,9 +130,11 @@ const PagoMercadoPago = ({
                     setCurrentExternalRef(null);
                     setPaymentProcessing(false);
                 }}
-                onReady={() => console.log("[Pago] ✅ Brick de Pago de Mercado Pago listo.")}
+                onReady={() => {
+                    console.log('[Pago] ✅ Brick de Pago listo');
+                }}
                 onClose={() => {
-                    console.warn('[Brick] 🛑 El usuario cerró el modal sin pagar');
+                    console.warn('[Pago] 🚫 Usuario cerró el modal sin pagar');
                     setPaymentProcessing(false);
                 }}
             />
