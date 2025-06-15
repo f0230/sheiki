@@ -14,16 +14,51 @@ const PagoMercadoPago = ({
     setCurrentExternalRef,
     setPaymentProcessing
 }) => {
+
+    const handlePaymentSubmit = async ({ formData }) => {
+        try {
+            console.log('[PagoMercadoPago] Enviando formData al backend:', formData);
+
+            const res = await fetch('/api/process_payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                console.error('❌ Error al procesar el pago:', data.error || data.message);
+                setError(data.error || 'Error al procesar el pago. Intenta nuevamente.');
+                setPreferenceId(null);
+                setCurrentExternalRef(null);
+                setPaymentProcessing(false);
+                return;
+            }
+
+            // Redireccionar si es ticket (Abitab/Redpagos)
+            if (data.status === 'pending' && data.external_resource_url) {
+                console.log('📄 Redirigiendo a instrucciones de pago:', data.external_resource_url);
+                window.location.href = data.external_resource_url;
+            }
+
+            // Si es aprobado, no necesita redirección manual (webhook se encarga)
+        } catch (error) {
+            console.error('❌ Excepción en handlePaymentSubmit:', error);
+            setError('Error al procesar el pago. Por favor, intentá nuevamente.');
+            setPreferenceId(null);
+            setCurrentExternalRef(null);
+            setPaymentProcessing(false);
+        }
+    };
+
+    
+
     return (
         <div className="bg-white text-black p-6 rounded-lg mt-8">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Completa tu pago</h2>
             </div>
-
-            <p className="text-sm text-gray-600 mb-4">
-                Serás redirigido de forma segura para completar el pago.
-            </p>
-
             <Payment
                 key={preferenceId} // Se usa la key para forzar el reinicio del componente si cambia la preferencia
                 initialization={{
@@ -33,9 +68,12 @@ const PagoMercadoPago = ({
                 customization={{
                     paymentMethods: {
                         mercadoPago: 'all',
+                        creditCard: 'all',
+                        debitCard: 'all',
+                        ticket: 'all', 
                         maxInstallments: 6,
                     },
-                    redirectMode: 'blank',
+                    redirectMode: 'modal',
                     defaultPaymentOption: {
                         walletForm: true,
                    
@@ -45,7 +83,7 @@ const PagoMercadoPago = ({
                       }
 
                 }}
-                onSubmit={onSubmit}
+                onSubmit={handlePaymentSubmit}
                 onError={(mpError) => {
                     console.error('[Pago] ❌ Error en Payment Brick:', mpError);
                     setError('Error al iniciar el pago con Mercado Pago. Por favor, intenta de nuevo o edita tus datos.');
