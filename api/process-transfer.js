@@ -1,4 +1,9 @@
-import { supabase } from '../src/lib/supabaseClient.js'; // Ruta corregida
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -27,36 +32,50 @@ export default async function handler(req, res) {
             return res.status(400).json({ message: 'El email del cliente es obligatorio' });
         }
 
-        const montoProductos = items_comprados.reduce((total, item) => {
-            return total + item.precio * item.quantity;
-        }, 0);
+        const total = items_comprados.reduce((acc, item) => acc + item.precio * item.quantity, 0);
+        const costoEnvio = typeof shippingCost === 'string' ? parseFloat(shippingCost) : Number(shippingCost);
+        const envioGratis = total >= 1800 || tipoEntrega === 'retiro';
+        const totalFinal = total + (isNaN(costoEnvio) ? 0 : costoEnvio);
 
-        const montoFinal = montoProductos + shippingCost;
+        const fechaMontevideo = new Date().toLocaleString('en-CA', {
+            timeZone: 'America/Montevideo',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false,
+        }).replace(',', '');
+        const [datePart, timePart] = fechaMontevideo.split(' ');
+        const fechaFinal = `${datePart}T${timePart}-03:00`;
 
-        const { error } = await supabase.from('ordenes').insert({
-            order_id,
-            datos_envio,
+        const orden = {
+            external_reference: order_id,
+            email_usuario: email,
+            email_cliente: email,
             items_comprados,
-            shippingCost,
-            monto: montoFinal,
-            estado: 'pending_transferencia',
-            medio_pago: 'manual_transfer',
+            total: totalFinal,
+            estado_pago: 'pending_transferencia',
             nombre,
             telefono,
             direccion,
             departamento,
             tipo_entrega: tipoEntrega,
-            email_usuario: email,
-        });
+            costo_envio: costoEnvio,
+            envio_gratis: envioGratis,
+            fecha: fechaFinal,
+            metodo_pago: 'manual_transfer',
+        };
+
+        const { error } = await supabase.from('ordenes').insert([orden]);
 
         if (error) {
             console.error('❌ Error al insertar orden:', error);
-            return res.status(500).json({
-                message: 'Error al guardar la orden',
-                details: error.message,
-            });
+            return res.status(500).json({ message: 'Error al guardar la orden', details: error.message });
         }
 
+        console.log('✅ Orden registrada con éxito:', orden);
         return res.status(200).json({ message: 'Orden registrada con éxito' });
 
     } catch (err) {
