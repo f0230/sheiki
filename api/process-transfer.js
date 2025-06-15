@@ -1,9 +1,8 @@
-// /pages/api/process-transfer.js
+// api/process-transfer.js
 
 import { createClient } from '@supabase/supabase-js';
-import { deductStock } from '../src/lib/stock-manager.js';
+import { deductStock } from '../src/lib/stock-manager.js'; // ✅ Ruta corregida
 
-// Inicializar Supabase con variables privadas del entorno de Vercel
 const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -15,9 +14,12 @@ export default async function handler(req, res) {
     }
 
     try {
+        console.log('📦 Payload recibido:', req.body);
+
         const { order_id, items_comprados, datos_envio, shippingCost } = req.body;
 
         if (!order_id || !items_comprados || !datos_envio) {
+            console.error('❌ Faltan datos obligatorios:', { order_id, items_comprados, datos_envio });
             return res.status(400).json({ message: 'Faltan datos obligatorios para registrar la orden.' });
         }
 
@@ -25,7 +27,7 @@ export default async function handler(req, res) {
             items_comprados.reduce((acc, item) => acc + item.precio * item.quantity, 0) +
             Number(shippingCost || 0);
 
-        // Verificar si ya existe la orden
+        // Verificar si la orden ya existe
         const { data: existingOrder, error: fetchError } = await supabase
             .from('ordenes')
             .select('id')
@@ -60,7 +62,6 @@ export default async function handler(req, res) {
             console.log(`ℹ️ Orden ya existente con referencia (${order_id}), se omite inserción.`);
         }
 
-        // Deducción de stock
         const stockResult = await deductStock(items_comprados);
         if (!stockResult.success) {
             return res.status(500).json({ message: 'Error al deducir stock', details: stockResult.error });

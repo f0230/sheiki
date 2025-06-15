@@ -24,8 +24,14 @@ const useFinalizarCheckout = ({
             const datos_envio = JSON.parse(localStorage.getItem('datos_envio'));
 
             try {
-                // Si es transferencia bancaria, registrar manualmente
                 if (tipo_pago === 'manual_transfer') {
+                    console.log('🧾 Enviando datos a /api/process-transfer:', {
+                        order_id,
+                        items_comprados,
+                        datos_envio,
+                        shippingCost
+                    });
+
                     const res = await fetch('/api/process-transfer', {
                         method: 'POST',
                         headers: {
@@ -46,17 +52,15 @@ const useFinalizarCheckout = ({
                     }
                 }
 
-                // Finaliza checkout en frontend
                 setIsCheckoutFinalized(true);
                 setPaymentProcessing(false);
                 setPreferenceId(null);
                 setConfirmed(false);
                 clearCart();
 
-                // Redirige según estado
                 if (estado_pago === 'approved') {
                     navigate('/success');
-                } else if (estado_pago === 'pending' || estado_pago === 'pending_transferencia') {
+                } else if (estado_pago === 'pending_transferencia' || estado_pago === 'pending') {
                     navigate('/pending');
                 } else {
                     navigate('/failure');
