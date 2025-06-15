@@ -1,9 +1,5 @@
-const { createClient } = require('@supabase/supabase-js');
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabaseClient.js'; // ✅ Import correcto con extensión y ruta relativa
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -15,7 +11,6 @@ export default async function handler(req, res) {
 
         console.log('📦 Payload recibido:', req.body);
 
-        // Validación básica
         if (!order_id || !datos_envio || !items_comprados || !Array.isArray(items_comprados)) {
             return res.status(400).json({ message: 'Faltan datos obligatorios' });
         }
@@ -33,13 +28,12 @@ export default async function handler(req, res) {
             return res.status(400).json({ message: 'El email del cliente es obligatorio' });
         }
 
-        // Calcular monto total
         const montoProductos = items_comprados.reduce((total, item) => {
             return total + item.precio * item.quantity;
         }, 0);
+
         const montoFinal = montoProductos + shippingCost;
 
-        // Insertar orden en Supabase
         const { error } = await supabase.from('ordenes').insert({
             order_id,
             datos_envio,
@@ -53,7 +47,7 @@ export default async function handler(req, res) {
             direccion,
             departamento,
             tipo_entrega: tipoEntrega,
-            email_usuario: email, // ✅ Aquí se usa el email del cliente
+            email_usuario: email, // ✅ Se usa email del cliente
         });
 
         if (error) {

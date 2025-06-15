@@ -79,6 +79,8 @@ const procesarOrden = async ({ items, estado_pago, email_usuario, email_cliente 
         envio_gratis: envioGratis,
         fecha: fechaFinal,
         external_reference: datos_envio.externalReference ?? null,
+        metodo_pago: datos_envio.metodo_pago ?? null
+
     };
 
     console.log('📝 Guardando orden en Supabase:', orden);
@@ -149,6 +151,7 @@ export default async function handler(req, res) {
             tipoEntrega: payment.metadata?.tipoEntrega || payment.metadata?.tipo_entrega || '',
             shippingCost: payment.metadata?.shippingCost ?? payment.metadata?.shipping_cost ?? 0,
             externalReference,
+            metodo_pago: payment.payment_method_id || null
         };
 
         console.log('📦 Items desde metadata:', items);
