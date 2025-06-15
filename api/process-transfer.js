@@ -1,5 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabaseClient.js'; // ✅ Import correcto con extensión y ruta relativa
+import { supabase } from '../src/lib/supabaseClient.js'; // Ruta corregida
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -47,7 +46,7 @@ export default async function handler(req, res) {
             direccion,
             departamento,
             tipo_entrega: tipoEntrega,
-            email_usuario: email, // ✅ Se usa email del cliente
+            email_usuario: email,
         });
 
         if (error) {
