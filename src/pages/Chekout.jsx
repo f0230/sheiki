@@ -323,6 +323,8 @@ const CheckoutPage = () => {
         )}
       </main>
       <Footer />
+      <Toast message={toastMessage} visible={toastVisible} />
+
     </div>
   );
 };

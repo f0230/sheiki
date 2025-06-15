@@ -33,7 +33,11 @@ const PagoMercadoPago = ({
                 throw new Error('Carrito vacío o inválido.');
             }
             if (isTicket && (!ci || ci.length < 6)) {
-                throw new Error('La cédula es obligatoria para pagos en efectivo.');
+                const msg = 'La cédula es obligatoria para pagos en efectivo.';
+                setToastMessage?.(msg);
+                setToastVisible?.(true);
+                setTimeout(() => setToastVisible?.(false), 5000);
+                return;
             }
 
             // 🧠 Guardar para tracking (Status Screen Brick, webhook)
