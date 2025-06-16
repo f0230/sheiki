@@ -1,5 +1,25 @@
 import React from 'react';
 import { Payment } from '@mercadopago/sdk-react';
+import {
+    DATOS_ENVIO_KEY,
+    ITEMS_COMPRADOS_KEY,
+    EXTERNAL_REFERENCE_KEY,
+    PAYMENT_ID_KEY,
+    TICKET_URL_KEY,
+    TICKET_STATUS_REF_KEY,
+    BACKUP_CART_KEY,
+    BACKUP_ENVIO_KEY,
+    ABITAB_PM,
+    REDPAGOS_PM,
+    IDENTIFICATION_TYPE_CI,
+    PAYMENT_STATUS_PENDING,
+    PAYMENT_STATUS_APPROVED,
+    PAYMENT_TYPE_BRICK,
+    ORDER_PREFIX,
+    DEFAULT_PAYER_EMAIL,
+    DEFAULT_CI,
+    PAYMENT_DESCRIPTION
+} from '../../lib/constants';
 
 const PagoMercadoPago = ({
     preferenceId,
@@ -13,6 +33,46 @@ const PagoMercadoPago = ({
     setToastMessage,  // ✅
     setToastVisible   // ✅
 }) => {
+
+    // Helper Functions
+    const getPaymentDataFromStorage = () => {
+        const shippingData = JSON.parse(localStorage.getItem(DATOS_ENVIO_KEY)) || {};
+        const items = JSON.parse(localStorage.getItem(ITEMS_COMPRADOS_KEY)) || [];
+        return { shippingData, items };
+    };
+
+    const validatePaymentInputs = (items, paymentMethodId, ci) => {
+        if (!Array.isArray(items) || items.length === 0) {
+            return 'Carrito vacío o inválido.';
+        }
+        const isTicket = paymentMethodId === ABITAB_PM || paymentMethodId === REDPAGOS_PM;
+        if (isTicket && (!ci || ci.length < 6)) {
+            return 'La cédula es obligatoria para pagos en efectivo.';
+        }
+        return null;
+    };
+
+    const prepareApiPayload = (formData, shippingData, items, email, ci, externalReference) => {
+        return {
+            ...formData,
+            description: PAYMENT_DESCRIPTION,
+            payer: {
+                email,
+                identification: {
+                    type: IDENTIFICATION_TYPE_CI,
+                    number: ci || DEFAULT_CI // fallback solo si no es ticket
+                }
+            },
+            metadata: {
+                ...shippingData,
+                items,
+                email,
+                shipping_cost: Number(shippingData?.shippingCost || 0),
+                externalReference
+            }
+        };
+    };
+
     const handlePaymentSubmit = async ({ formData }) => {
         try {
             // ⏳ Paso previo: guardar localStorage y validar stock
@@ -21,56 +81,37 @@ const PagoMercadoPago = ({
                 if (!ok) return;
             }
 
-            const shippingData = JSON.parse(localStorage.getItem('datos_envio')) || {};
-            const items = JSON.parse(localStorage.getItem('items_comprados')) || [];
-            const externalReference = `orden-${Date.now()}`;
-            const email = shippingData.email || 'no-reply@sheiki.uy';
+            const { shippingData, items } = getPaymentDataFromStorage();
+            const email = shippingData.email || DEFAULT_PAYER_EMAIL;
             const ci = shippingData?.ci?.trim();
-
             const paymentMethodId = formData?.payment_method_id;
-            const isTicket = paymentMethodId === 'abitab' || paymentMethodId === 'redpagos';
 
-            // 🔒 Validaciones defensivas
-            if (!Array.isArray(items) || items.length === 0) {
-                throw new Error('Carrito vacío o inválido.');
-            }
-            if (isTicket && (!ci || ci.length < 6)) {
-                const msg = 'La cédula es obligatoria para pagos en efectivo.';
-                setToastMessage?.(msg);
+            const validationError = validatePaymentInputs(items, paymentMethodId, ci);
+            if (validationError) {
+                if (validationError === 'Carrito vacío o inválido.') { // Specific handling for critical error
+                    setError(validationError); // Use setError for critical issues
+                    setPaymentProcessing(false);
+                    // Potentially redirect or show a more persistent error
+                    return;
+                }
+                setToastMessage?.(validationError);
                 setToastVisible?.(true);
-                setPaymentProcessing(false); // ✅ evitar loop
+                setPaymentProcessing(false);
                 setTimeout(() => setToastVisible?.(false), 5000);
                 return;
             }
-            
 
-            // 🧠 Guardar para tracking (Status Screen Brick, webhook)
-            localStorage.setItem('external_reference', externalReference);
+            const externalReference = `${ORDER_PREFIX}${Date.now()}`;
+            localStorage.setItem(EXTERNAL_REFERENCE_KEY, externalReference);
 
-            const enrichedFormData = {
-                ...formData,
-                description: 'Pago Sheiki',
-                payer: {
-                    email,
-                    identification: {
-                        type: 'CI',
-                        number: ci || '00000000' // fallback solo si no es ticket
-                    }
-                },
-                metadata: {
-                    ...shippingData,
-                    items,
-                    email,
-                    shipping_cost: Number(shippingData?.shippingCost || 0),
-                    externalReference
-                }
-            };
+            const enrichedFormData = prepareApiPayload(formData, shippingData, items, email, ci, externalReference);
 
             console.log('[🧾 PagoMercadoPago] Payload enriquecido:', enrichedFormData);
-            
-            localStorage.setItem('backup_cart', localStorage.getItem('items_comprados'));
-            localStorage.setItem('backup_envio', localStorage.getItem('datos_envio'));
-            
+
+            // Backup current cart and shipping info before processing
+            localStorage.setItem(BACKUP_CART_KEY, JSON.stringify(items)); // Ensure stringified
+            localStorage.setItem(BACKUP_ENVIO_KEY, JSON.stringify(shippingData)); // Ensure stringified
+
             const res = await fetch('/api/process_payment', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -81,7 +122,7 @@ const PagoMercadoPago = ({
 
             // 💾 Guardar siempre el payment_id si existe
             if (data?.id) {
-                localStorage.setItem('payment_id', data.id);
+                localStorage.setItem(PAYMENT_ID_KEY, data.id);
             }
 
             if (!res.ok) {
@@ -93,18 +134,18 @@ const PagoMercadoPago = ({
                 window.location.href = '/failure';
                 return;
             }
-            
+
 
             // 🧾 Redirige a instrucciones si es efectivo
-            if (data.status === 'pending' && data.external_resource_url) {
-                localStorage.setItem('payment_id', data.id); // ✅ asegúrate que se guarde
-                localStorage.setItem('ticket_url', data.external_resource_url);
-                localStorage.setItem('ticket_status_ref', data.external_reference); // por si querés usarlo en PendingPage
+            if (data.status === PAYMENT_STATUS_PENDING && data.external_resource_url) {
+                localStorage.setItem(PAYMENT_ID_KEY, data.id); // ✅ asegúrate que se guarde
+                localStorage.setItem(TICKET_URL_KEY, data.external_resource_url);
+                localStorage.setItem(TICKET_STATUS_REF_KEY, data.external_reference); // por si querés usarlo en PendingPage
                 window.location.href = '/pending';
                 return;
             }
-            if (data.status === 'approved') {
-                await finalizeCheckout('approved', 'brick');
+            if (data.status === PAYMENT_STATUS_APPROVED) {
+                await finalizeCheckout(PAYMENT_STATUS_APPROVED, PAYMENT_TYPE_BRICK);
                 return;
             }
 
@@ -114,24 +155,8 @@ const PagoMercadoPago = ({
             setPreferenceId(null);
             setCurrentExternalRef(null);
             setPaymentProcessing(false);
-            window.location.href = '/failure'; 
+            window.location.href = '/failure';
         }
-
-        if (data.status === 'approved') {
-            await finalizeCheckout('approved', 'brick');
-            return;
-        }
-
-        if (data.status === 'pending') {
-            // se manejó antes
-            return;
-        }
-
-        // ⚠️ Fallback visual
-        setToastMessage('Ocurrió un error al procesar el pago. Por favor, intentá nuevamente.');
-        setToastVisible(true);
-        setPaymentProcessing(false);
-        
     };
 
     return (

@@ -1,4 +1,20 @@
 import { useCallback } from 'react';
+import {
+    SHEIKI_PAYMENT_STATUS_KEY,
+    ORDER_ID_KEY,
+    MONTO_TOTAL_KEY,
+    USER_EMAIL_KEY,
+    PAYMENT_ID_KEY,
+    DATOS_ENVIO_KEY,
+    ITEMS_COMPRADOS_KEY,
+    EXTERNAL_REFERENCE_KEY,
+    PAYMENT_STATUS_APPROVED,
+    PAYMENT_STATUS_PENDING,
+    PAYMENT_STATUS_IN_PROCESS,
+    PAYMENT_STATUS_PENDING_TRANSFERENCIA,
+    PAYMENT_TYPE_MERCADOPAGO,
+    PAYMENT_TYPE_MANUAL_TRANSFER
+} from '../lib/constants';
 
 const useFinalizarCheckout = ({
     isCheckoutFinalized,
@@ -15,23 +31,23 @@ const useFinalizarCheckout = ({
     items
 }) => {
     const finalizeCheckout = useCallback(
-        async (estado_pago = 'approved', tipo_pago = 'mercadopago') => {
-            const normalizedStatus = (estado_pago || '').toLowerCase();
+        async (estado_pago = PAYMENT_STATUS_APPROVED, tipo_pago = PAYMENT_TYPE_MERCADOPAGO) => {
+            const normalizedStatus = (estado_pago || '').toLowerCase(); // Keep toLowerCase for safety, though constants should be correct
             const order_id = currentExternalRef || crypto.randomUUID();
             const datos_envio = { ...shippingData, shippingCost };
             const items_comprados = items;
 
             // 🧠 Guardar datos útiles
-            localStorage.setItem('sheikiPaymentStatus', normalizedStatus);
-            localStorage.setItem('order_id', order_id);
-            localStorage.setItem('monto_total', String(calculateTotal() + shippingCost));
+            localStorage.setItem(SHEIKI_PAYMENT_STATUS_KEY, normalizedStatus);
+            localStorage.setItem(ORDER_ID_KEY, order_id);
+            localStorage.setItem(MONTO_TOTAL_KEY, String(calculateTotal() + shippingCost));
             if (shippingData?.email) {
-                localStorage.setItem('user_email', shippingData.email);
+                localStorage.setItem(USER_EMAIL_KEY, shippingData.email);
             }
 
             try {
                 if (!isCheckoutFinalized) {
-                    if (tipo_pago === 'manual_transfer') {
+                    if (tipo_pago === PAYMENT_TYPE_MANUAL_TRANSFER) {
                         console.log('📤 Enviando datos directo a /api/process-transfer:', {
                             order_id,
                             datos_envio,
@@ -59,16 +75,16 @@ const useFinalizarCheckout = ({
                     setConfirmed(false);
                     clearCart();
 
-                    localStorage.removeItem('payment_id');
-                    localStorage.removeItem('datos_envio');
-                    localStorage.removeItem('items_comprados');
-                    localStorage.removeItem('external_reference');
+                    localStorage.removeItem(PAYMENT_ID_KEY);
+                    localStorage.removeItem(DATOS_ENVIO_KEY);
+                    localStorage.removeItem(ITEMS_COMPRADOS_KEY);
+                    localStorage.removeItem(EXTERNAL_REFERENCE_KEY);
                 }
 
                 // 🚦 Redirección garantizada
-                if (normalizedStatus === 'approved') {
+                if (normalizedStatus === PAYMENT_STATUS_APPROVED) {
                     navigate('/success');
-                } else if (['pending', 'in_process', 'pending_transferencia'].includes(normalizedStatus)) {
+                } else if ([PAYMENT_STATUS_PENDING, PAYMENT_STATUS_IN_PROCESS, PAYMENT_STATUS_PENDING_TRANSFERENCIA].includes(normalizedStatus)) {
                     navigate('/pending');
                 } else {
                     navigate('/failure');
