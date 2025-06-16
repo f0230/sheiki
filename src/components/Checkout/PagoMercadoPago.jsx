@@ -116,6 +116,22 @@ const PagoMercadoPago = ({
             setPaymentProcessing(false);
             window.location.href = '/failure'; 
         }
+
+        if (data.status === 'approved') {
+            await finalizeCheckout('approved', 'brick');
+            return;
+        }
+
+        if (data.status === 'pending') {
+            // se manejó antes
+            return;
+        }
+
+        // ⚠️ Fallback visual
+        setToastMessage('Ocurrió un error al procesar el pago. Por favor, intentá nuevamente.');
+        setToastVisible(true);
+        setPaymentProcessing(false);
+        
     };
 
     return (
