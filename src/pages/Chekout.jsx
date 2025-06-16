@@ -304,7 +304,7 @@ const CheckoutPage = () => {
                   await finalizeCheckout('pending_transferencia', 'manual_transfer');
                 } catch (error) {
                   console.error("❌ Error al confirmar transferencia:", error);
-                } finally {
+                } finally {e
                   setTimeout(() => setToastVisible(false), 1000);
                 }
               }}
