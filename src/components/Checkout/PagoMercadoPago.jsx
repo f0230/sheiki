@@ -18,7 +18,10 @@ import {
     ORDER_PREFIX,
     DEFAULT_PAYER_EMAIL,
     DEFAULT_CI,
-    PAYMENT_DESCRIPTION
+    PAYMENT_DESCRIPTION,
+    PAYMENT_REJECTED_MESSAGE, // Added
+    FAILURE_PAGE_PATH,      // Added
+    PENDING_PAGE_PATH       // Added
 } from '../../lib/constants';
 
 const PagoMercadoPago = ({
@@ -131,7 +134,7 @@ const PagoMercadoPago = ({
                 setPreferenceId(null);
                 setCurrentExternalRef(null);
                 setPaymentProcessing(false);
-                window.location.href = '/failure';
+                window.location.href = FAILURE_PAGE_PATH;
                 return;
             }
 
@@ -141,7 +144,7 @@ const PagoMercadoPago = ({
                 localStorage.setItem(PAYMENT_ID_KEY, data.id); // ✅ asegúrate que se guarde
                 localStorage.setItem(TICKET_URL_KEY, data.external_resource_url);
                 localStorage.setItem(TICKET_STATUS_REF_KEY, data.external_reference); // por si querés usarlo en PendingPage
-                window.location.href = '/pending';
+                window.location.href = PENDING_PAGE_PATH;
                 return;
             }
             if (data.status === PAYMENT_STATUS_APPROVED) {
@@ -149,13 +152,27 @@ const PagoMercadoPago = ({
                 return;
             }
 
+            // ⚠️ Fallback for other statuses when res.ok is true (e.g., rejected, cancelled)
+            // This handles cases where the API call was successful but the payment was not approved or pending.
+            console.warn('⚠️ Pago no aprobado ni pendiente, estado:', data.status, 'Detalle:', data.status_detail || 'No disponible');
+            const rejectionMessage = data.status_detail || PAYMENT_REJECTED_MESSAGE;
+            setError(rejectionMessage); // Provide more specific error if available
+            setPreferenceId(null);
+            setCurrentExternalRef(null);
+            setToastMessage?.(rejectionMessage);
+            setToastVisible?.(true);
+            setTimeout(() => setToastVisible?.(false), 5000); // Consistent with other toast usage
+            setPaymentProcessing(false); // Crucial: Set paymentProcessing to false
+            window.location.href = FAILURE_PAGE_PATH;
+            return; // Ensure no further code in the try block is executed
+
         } catch (error) {
             console.error('❌ Excepción en handlePaymentSubmit:', error);
             setError(error.message || 'Error al procesar el pago. Intenta nuevamente.');
             setPreferenceId(null);
             setCurrentExternalRef(null);
             setPaymentProcessing(false);
-            window.location.href = '/failure';
+            window.location.href = FAILURE_PAGE_PATH;
         }
     };
 
