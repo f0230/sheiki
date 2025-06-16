@@ -19,9 +19,11 @@ import {
     DEFAULT_PAYER_EMAIL,
     DEFAULT_CI,
     PAYMENT_DESCRIPTION,
-    PAYMENT_REJECTED_MESSAGE, // Added
-    FAILURE_PAGE_PATH,      // Added
-    PENDING_PAGE_PATH       // Added
+    PAYMENT_REJECTED_MESSAGE,
+    FAILURE_PAGE_PATH,
+    PENDING_PAGE_PATH,
+    STATUS_DETAIL_KEY,         // New
+    PAYMENT_METHOD_ID_KEY_LS   // New
 } from '../../lib/constants';
 
 const PagoMercadoPago = ({
@@ -134,6 +136,8 @@ const PagoMercadoPago = ({
                 setPreferenceId(null);
                 setCurrentExternalRef(null);
                 setPaymentProcessing(false);
+                localStorage.setItem(STATUS_DETAIL_KEY, data.status_detail || (data.message || ''));
+                localStorage.setItem(PAYMENT_METHOD_ID_KEY_LS, enrichedFormData.payment_method_id || '');
                 window.location.href = FAILURE_PAGE_PATH;
                 return;
             }
@@ -163,6 +167,8 @@ const PagoMercadoPago = ({
             setToastVisible?.(true);
             setTimeout(() => setToastVisible?.(false), 5000); // Consistent with other toast usage
             setPaymentProcessing(false); // Crucial: Set paymentProcessing to false
+            localStorage.setItem(STATUS_DETAIL_KEY, data.status_detail || '');
+            localStorage.setItem(PAYMENT_METHOD_ID_KEY_LS, formData.payment_method_id || '');
             window.location.href = FAILURE_PAGE_PATH;
             return; // Ensure no further code in the try block is executed
 

@@ -1,7 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { StatusScreen } from '@mercadopago/sdk-react';
 import { useNavigate } from 'react-router-dom';
-import { XCircle, RefreshCw } from 'lucide-react';
+import { XCircle, RefreshCw, ShoppingCart, Home } from 'lucide-react'; // Added ShoppingCart, Home
+import {
+    BACKUP_CART_KEY,
+    BACKUP_ENVIO_KEY,
+    STATUS_DETAIL_KEY,
+    PAYMENT_METHOD_ID_KEY_LS,
+    ITEMS_COMPRADOS_KEY,
+    DATOS_ENVIO_KEY,
+    CHECKOUT_PAGE_PATH, // Assuming /pago
+    HOME_PAGE_PATH,     // Assuming /
+    ABITAB_PM,          // For checking method
+    REDPAGOS_PM         // For checking method
+} from '../lib/constants';
 
 const getRejectionMessage = (statusDetail) => {
     switch (statusDetail) {
@@ -33,54 +44,36 @@ const getRejectionMessage = (statusDetail) => {
 };
 
 const FailurePage = () => {
-    const [statusDetail, setStatusDetail] = useState(null);
-    const [message, setMessage] = useState(null);
-    const [metodoPago, setMetodoPago] = useState(null);
+    const [statusDetail, setStatusDetail] = useState(''); // Default to empty string
+    const [message, setMessage] = useState('');
+    const [metodoPago, setMetodoPago] = useState('');
+    const [backupCart, setBackupCart] = useState([]);
+    const [backupEnvio, setBackupEnvio] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
+        // localStorage.setItem(SHEIKI_PAYMENT_STATUS_KEY, 'failure'); // SHEIKI_PAYMENT_STATUS_KEY not imported, using string for now
         localStorage.setItem('sheikiPaymentStatus', 'failure');
 
-        const detail = localStorage.getItem('status_detail');
-        const metodo = localStorage.getItem('metodo_pago');
-        setStatusDetail(detail);
-        setMetodoPago(metodo);
+
+        const detail = localStorage.getItem(STATUS_DETAIL_KEY);
+        const metodo = localStorage.getItem(PAYMENT_METHOD_ID_KEY_LS);
+        setStatusDetail(detail || '');
+        setMetodoPago(metodo || '');
         setMessage(getRejectionMessage(detail));
 
-        return () => {
-            if (window.statusScreenBrickController) {
-                window.statusScreenBrickController.unmount();
-                console.log('[FailurePage] 🧹 Brick desmontado');
-            }
-        };
+        setBackupCart(JSON.parse(localStorage.getItem(BACKUP_CART_KEY)) || []);
+        setBackupEnvio(JSON.parse(localStorage.getItem(BACKUP_ENVIO_KEY)) || null);
+
+        // No brick unmount logic needed
     }, []);
 
-    const initialization = {
-        paymentId: localStorage.getItem('payment_id'),
-    };
-
-    const customization = {
-        backUrls: {
-            return: 'https://www.sheiki.uy',
-            error: 'https://www.sheiki.uy/failure',
-        },
-        texts: {
-            ctaGeneralErrorLabel: 'Reintentar el pago',
-            ctaReturnLabel: 'Volver a la tienda',
-        },
-    };
-
-    const onReady = () => console.log('[FailurePage] ✅ Brick listo');
-    const onError = (error) => console.error('[FailurePage] ❌ Error en StatusScreen:', error);
-
     return (
-        <div className="min-h-screen bg-red-50 flex flex-col items-center justify-center text-center p-4">
-        
-
-            <div className="bg-white border border-red-300 shadow-md rounded-xl max-w-xl w-full p-6 text-left mb-4">
-                <div className="flex items-center gap-3 text-red-600">
-                    <XCircle className="w-7 h-7 animate-pulse" />
-                    <h2 className="text-xl font-bold">Hubo un problema con tu pago</h2>
+        <div className="min-h-screen bg-red-50 flex flex-col items-center justify-center p-4">
+            <div className="bg-white border border-red-300 shadow-xl rounded-xl max-w-xl w-full p-6 sm:p-8 text-center">
+                <div className="flex flex-col items-center mb-6">
+                    <XCircle className="w-16 h-16 text-red-500 animate-pulse mb-3" />
+                    <h2 className="text-2xl sm:text-3xl font-bold text-red-700">Hubo un problema con tu pago</h2>
                 </div>
 
                 {message && (
@@ -88,46 +81,77 @@ const FailurePage = () => {
                 )}
 
                 <div className="mt-4 text-sm text-gray-500">
-                    Si creés que esto es un error, podés intentar nuevamente o escribirnos por WhatsApp.
+                    Si creés que esto es un error, podés intentar nuevamente o escribirnos.
                 </div>
 
                 <a
-                    href="https://wa.me/59891234567?text=Hola!%20Tuve%20un%20problema%20al%20pagar%20en%20Sheiki"
+                    href="https://wa.me/59891234567?text=Hola!%20Tuve%20un%20problema%20al%20pagar%20en%20Sheiki" // Consider making this configurable
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-green-700 hover:underline mt-2 inline-block"
+                    className="text-sm text-green-600 hover:text-green-700 hover:underline mt-2 inline-block font-medium"
                 >
-                    📱 ¿Necesitás ayuda? Escribinos por WhatsApp
+                    📱 Contactar por WhatsApp
                 </a>
+
+                {backupCart.length > 0 && (
+                    <div className="mt-6 bg-gray-50 rounded-xl shadow p-4 w-full text-left text-sm">
+                        <h3 className="font-semibold mb-2 text-gray-700 flex items-center">
+                            <ShoppingCart className="w-4 h-4 mr-2 text-gray-500" />
+                            Tu pedido que intentaste pagar:
+                        </h3>
+                        <ul className="divide-y divide-gray-200 max-h-48 overflow-y-auto">
+                            {backupCart.map((item, idx) => (
+                                <li key={idx} className="py-2 flex items-center space-x-2">
+                                    {item.imagen && (
+                                        <img src={item.imagen} alt={item.nombre} className="w-10 h-10 object-cover rounded shadow-sm" />
+                                    )}
+                                    <div className="flex-grow">
+                                        <span className="font-medium text-xs text-gray-800">{item.nombre}</span>
+                                        <span className="block text-xs text-gray-500">
+                                            Color: {item.color} | Talle: {item.talle} | Cant: {item.quantity}
+                                        </span>
+                                    </div>
+                                    <div className="text-right text-xs font-medium text-gray-800">${item.precio}</div>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
+                {backupEnvio && (
+                    <div className="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-left border border-gray-200">
+                        <h4 className="font-semibold mb-1 text-gray-600">Datos de envío proporcionados:</h4>
+                        <p><strong>Nombre:</strong> {backupEnvio.nombre} {backupEnvio.apellido}</p>
+                        <p><strong>Dirección:</strong> {backupEnvio.direccion}, {backupEnvio.localidad}</p>
+                        {/* Add more fields as needed, e.g., email, phone */}
+                    </div>
+                )}
+
+                <div className="mt-8 space-y-3">
+                    {metodoPago !== ABITAB_PM && metodoPago !== REDPAGOS_PM && ( // Check against imported constants
+                        <button
+                            onClick={() => {
+                                const cartData = localStorage.getItem(BACKUP_CART_KEY);
+                                const envioData = localStorage.getItem(BACKUP_ENVIO_KEY);
+                                if (cartData) localStorage.setItem(ITEMS_COMPRADOS_KEY, cartData);
+                                if (envioData) localStorage.setItem(DATOS_ENVIO_KEY, envioData);
+                                navigate(CHECKOUT_PAGE_PATH);
+                            }}
+                            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition duration-300 flex items-center justify-center gap-2"
+                        >
+                            <RefreshCw className="w-5 h-5" />
+                            Volver a intentar el pago
+                        </button>
+                    )}
+                    <button
+                        onClick={() => navigate(HOME_PAGE_PATH)}
+                        className="w-full bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition duration-300 flex items-center justify-center gap-2"
+                    >
+                        <Home className="w-5 h-5" />
+                        Volver a la tienda
+                    </button>
+                </div>
             </div>
-
-            <div className="w-full max-w-xl mb-6">
-                <StatusScreen
-                    initialization={initialization}
-                    customization={customization}
-                    onReady={onReady}
-                    onError={onError}
-                />
-            </div>
-
-            {metodoPago !== 'ticket' && (
-                <button
-                    onClick={() => {
-                        // Restaurar carrito e info de envío si existen backups
-                        const backupCart = localStorage.getItem('backup_cart');
-                        const backupEnvio = localStorage.getItem('backup_envio');
-                        if (backupCart) localStorage.setItem('items_comprados', backupCart);
-                        if (backupEnvio) localStorage.setItem('datos_envio', backupEnvio);
-
-                        navigate('/pago');
-                    }}
-                    className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-full shadow-md transition duration-300 flex items-center gap-2 mt-2"
-                >
-                    <RefreshCw className="w-5 h-5" />
-                    Volver a intentar el pago
-                </button>
-           
-            )}
         </div>
     );
 };

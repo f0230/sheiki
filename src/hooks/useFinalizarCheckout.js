@@ -13,7 +13,10 @@ import {
     PAYMENT_STATUS_IN_PROCESS,
     PAYMENT_STATUS_PENDING_TRANSFERENCIA,
     PAYMENT_TYPE_MERCADOPAGO,
-    PAYMENT_TYPE_MANUAL_TRANSFER
+    PAYMENT_TYPE_MANUAL_TRANSFER,
+    SUCCESS_PAGE_PATH,
+    PENDING_PAGE_PATH,
+    FAILURE_PAGE_PATH
 } from '../lib/constants';
 
 const useFinalizarCheckout = ({
@@ -83,17 +86,17 @@ const useFinalizarCheckout = ({
 
                 // 🚦 Redirección garantizada
                 if (normalizedStatus === PAYMENT_STATUS_APPROVED) {
-                    navigate('/success');
+                    navigate(SUCCESS_PAGE_PATH);
                 } else if ([PAYMENT_STATUS_PENDING, PAYMENT_STATUS_IN_PROCESS, PAYMENT_STATUS_PENDING_TRANSFERENCIA].includes(normalizedStatus)) {
-                    navigate('/pending');
+                    navigate(PENDING_PAGE_PATH);
                 } else {
-                    navigate('/failure');
+                    navigate(FAILURE_PAGE_PATH);
                 }
 
             } catch (err) {
                 console.error('❌ Error al finalizar checkout:', err);
                 setPaymentProcessing(false);
-                navigate('/failure');
+                navigate(FAILURE_PAGE_PATH);
             }
         },
         [

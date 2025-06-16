@@ -11,6 +11,8 @@ export const SHEIKI_PAYMENT_STATUS_KEY = 'sheikiPaymentStatus';
 export const ORDER_ID_KEY = 'order_id';
 export const MONTO_TOTAL_KEY = 'monto_total';
 export const USER_EMAIL_KEY = 'user_email';
+export const STATUS_DETAIL_KEY = 'status_detail'; // New
+export const PAYMENT_METHOD_ID_KEY_LS = 'payment_method_id_ls'; // New
 
 // Payment Method IDs
 export const ABITAB_PM = 'abitab';
@@ -42,3 +44,6 @@ export const PAYMENT_REJECTED_MESSAGE = 'Tu pago fue rechazado. Por favor, verif
 // Page Paths
 export const FAILURE_PAGE_PATH = '/failure';
 export const PENDING_PAGE_PATH = '/pending';
+export const SUCCESS_PAGE_PATH = '/success';
+export const CHECKOUT_PAGE_PATH = '/pago'; // New
+export const HOME_PAGE_PATH = '/'; // New
