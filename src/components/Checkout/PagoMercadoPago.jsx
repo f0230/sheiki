@@ -38,9 +38,11 @@ const PagoMercadoPago = ({
                 const msg = 'La cédula es obligatoria para pagos en efectivo.';
                 setToastMessage?.(msg);
                 setToastVisible?.(true);
+                setPaymentProcessing(false); // ✅ evitar loop
                 setTimeout(() => setToastVisible?.(false), 5000);
                 return;
             }
+            
 
             // 🧠 Guardar para tracking (Status Screen Brick, webhook)
             localStorage.setItem('external_reference', externalReference);
