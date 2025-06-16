@@ -37,3 +37,8 @@ export const ORDER_PREFIX = 'orden-';
 export const DEFAULT_PAYER_EMAIL = 'no-reply@sheiki.uy';
 export const DEFAULT_CI = '00000000';
 export const PAYMENT_DESCRIPTION = 'Pago Sheiki';
+export const PAYMENT_REJECTED_MESSAGE = 'Tu pago fue rechazado. Por favor, verifica los datos o intenta con otro método de pago.';
+
+// Page Paths
+export const FAILURE_PAGE_PATH = '/failure';
+export const PENDING_PAGE_PATH = '/pending';
