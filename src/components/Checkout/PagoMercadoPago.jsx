@@ -77,22 +77,25 @@ const PagoMercadoPago = ({
 
             const data = await res.json();
 
+            // 💾 Guardar siempre el payment_id si existe
+            if (data?.id) {
+                localStorage.setItem('payment_id', data.id);
+            }
+
             if (!res.ok) {
                 console.error('❌ Error al procesar pago:', data.error || data.message);
                 setError(data.error || 'Error al procesar el pago. Intenta nuevamente.');
                 setPreferenceId(null);
                 setCurrentExternalRef(null);
                 setPaymentProcessing(false);
+                window.location.href = '/failure';
                 return;
             }
-
-            // 💾 Para Status Screen Brick
-            if (data?.id) {
-                localStorage.setItem('payment_id', data.id);
-            }
+            
 
             // 🧾 Redirige a instrucciones si es efectivo
             if (data.status === 'pending' && data.external_resource_url) {
+                localStorage.setItem('payment_id', data.id); // ✅ asegúrate que se guarde
                 localStorage.setItem('ticket_url', data.external_resource_url);
                 localStorage.setItem('ticket_status_ref', data.external_reference); // por si querés usarlo en PendingPage
                 window.location.href = '/pending';
@@ -109,6 +112,7 @@ const PagoMercadoPago = ({
             setPreferenceId(null);
             setCurrentExternalRef(null);
             setPaymentProcessing(false);
+            window.location.href = '/failure'; 
         }
     };
 

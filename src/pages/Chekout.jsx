@@ -150,7 +150,6 @@ const CheckoutPage = () => {
           </motion.div>
         </main>
         <Footer />
-        <Toast message="✅ Pedido registrado por transferencia" visible={toastVisible} />
       </div>
     );
   }
@@ -300,17 +299,19 @@ const CheckoutPage = () => {
               className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition"
               onClick={async () => {
                 try {
+                  setToastMessage('✅ Pedido registrado por transferencia');
                   setToastVisible(true);
                   await finalizeCheckout('pending_transferencia', 'manual_transfer');
                 } catch (error) {
                   console.error("❌ Error al confirmar transferencia:", error);
                 } finally {
-                  setTimeout(() => setToastVisible(false), 5000);
+                  setTimeout(() => setToastVisible(false), 1000);
                 }
               }}
             >
               Confirmar pedido por transferencia
             </button>
+
           </div>
         )}
 
@@ -327,6 +328,7 @@ const CheckoutPage = () => {
       </main>
       <Footer />
       <Toast message={toastMessage} visible={toastVisible} />
+
 
     </div>
   );
