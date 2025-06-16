@@ -58,6 +58,14 @@ const CheckoutPage = () => {
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [isCheckoutFinalized, setIsCheckoutFinalized] = useState(false);
 
+  const handleEditShippingData = () => {
+    setConfirmed(false);
+    setPreferenceId(null);
+    setCurrentExternalRef(null);
+    setError(null);
+    setLoading(false);
+  };
+
   const isEmailValid = shippingData.email.includes('@') && shippingData.email.includes('.');
   const isTicket = metodoPago === 'ticket';
 
@@ -200,13 +208,7 @@ const CheckoutPage = () => {
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold">Método de pago</h2>
                   <button
-                    onClick={() => {
-                      setConfirmed(false);
-                      setPreferenceId(null);
-                      setCurrentExternalRef(null);
-                      setError(null);
-                      setLoading(false);
-                    }}
+                    onClick={handleEditShippingData} // Changed from inline function
                     className="text-sm text-blue-600 hover:underline"
                   >
                     Editar datos de envío
@@ -274,13 +276,14 @@ const CheckoutPage = () => {
             setPreferenceId={setPreferenceId}
             setCurrentExternalRef={setCurrentExternalRef}
             setPaymentProcessing={setPaymentProcessing}
-            finalizeCheckout={finalizeCheckout} 
+            finalizeCheckout={finalizeCheckout}
             setToastMessage={setToastMessage}         // ✅
-            setToastVisible={setToastVisible}  
+            setToastVisible={setToastVisible}
+            handleEditShippingData={handleEditShippingData}
           />
         )}
 
-        
+
         {confirmed && metodoPago === 'transferencia' && (
           <div className="bg-white text-black p-6 rounded-lg mt-8">
             <h2 className="text-xl font-semibold mb-2">Transferencia bancaria</h2>
@@ -304,7 +307,7 @@ const CheckoutPage = () => {
                   await finalizeCheckout('pending_transferencia', 'manual_transfer');
                 } catch (error) {
                   console.error("❌ Error al confirmar transferencia:", error);
-                } finally {e
+                } finally {
                   setTimeout(() => setToastVisible(false), 1000);
                 }
               }}

@@ -16,7 +16,8 @@ import {
     PAYMENT_TYPE_MANUAL_TRANSFER,
     SUCCESS_PAGE_PATH,
     PENDING_PAGE_PATH,
-    FAILURE_PAGE_PATH
+    FAILURE_PAGE_PATH,
+    TIPO_PAGO_KEY
 } from '../lib/constants';
 
 const useFinalizarCheckout = ({
@@ -47,6 +48,8 @@ const useFinalizarCheckout = ({
             if (shippingData?.email) {
                 localStorage.setItem(USER_EMAIL_KEY, shippingData.email);
             }
+            // Store payment type
+            localStorage.setItem(TIPO_PAGO_KEY, tipo_pago);
 
             try {
                 if (!isCheckoutFinalized) {
@@ -72,6 +75,7 @@ const useFinalizarCheckout = ({
                     }
 
                     // 🧼 Limpieza de estados
+                    // localStorage.setItem(TIPO_PAGO_KEY, tipo_pago); // Moved up to be set regardless of isCheckoutFinalized
                     setIsCheckoutFinalized(true);
                     setPaymentProcessing(false);
                     setPreferenceId(null);

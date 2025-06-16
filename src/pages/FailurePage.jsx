@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { XCircle, RefreshCw, ShoppingCart, Home } from 'lucide-react'; // Added ShoppingCart, Home
+import { motion } from 'framer-motion';
 import {
     BACKUP_CART_KEY,
     BACKUP_ENVIO_KEY,
@@ -70,7 +71,12 @@ const FailurePage = () => {
 
     return (
         <div className="min-h-screen bg-red-50 flex flex-col items-center justify-center p-4">
-            <div className="bg-white border border-red-300 shadow-xl rounded-xl max-w-xl w-full p-6 sm:p-8 text-center">
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="bg-white border border-red-300 shadow-xl rounded-xl max-w-xl w-full p-6 sm:p-8 text-center"
+            >
                 <div className="flex flex-col items-center mb-6">
                     <XCircle className="w-16 h-16 text-red-500 animate-pulse mb-3" />
                     <h2 className="text-2xl sm:text-3xl font-bold text-red-700">Hubo un problema con tu pago</h2>
@@ -99,22 +105,35 @@ const FailurePage = () => {
                             <ShoppingCart className="w-4 h-4 mr-2 text-gray-500" />
                             Tu pedido que intentaste pagar:
                         </h3>
-                        <ul className="divide-y divide-gray-200 max-h-48 overflow-y-auto">
+                        <ul className="divide-y divide-gray-200 max-h-60 overflow-y-auto"> {/* Increased max-h like other pages */}
                             {backupCart.map((item, idx) => (
-                                <li key={idx} className="py-2 flex items-center space-x-2">
-                                    {item.imagen && (
-                                        <img src={item.imagen} alt={item.nombre} className="w-10 h-10 object-cover rounded shadow-sm" />
-                                    )}
-                                    <div className="flex-grow">
-                                        <span className="font-medium text-xs text-gray-800">{item.nombre}</span>
-                                        <span className="block text-xs text-gray-500">
-                                            Color: {item.color} | Talle: {item.talle} | Cant: {item.quantity}
-                                        </span>
-                                    </div>
-                                    <div className="text-right text-xs font-medium text-gray-800">${item.precio}</div>
-                                </li>
+                               <li key={idx} className="py-3 flex items-center space-x-3">
+                               {item.imagen && (
+                                 <img
+                                   src={item.imagen}
+                                   alt={item.nombre}
+                                   className="w-16 h-16 object-cover rounded-md shadow"
+                                 />
+                               )}
+                               <div className="flex-grow">
+                                 <span className="font-medium text-gray-900">{item.nombre}</span>
+                                 <span className="block text-xs text-gray-500">
+                                   Color: {item.color} | Talle: {item.talle}
+                                 </span>
+                               </div>
+                               <div className="text-right">
+                                 <span className="block font-medium text-gray-900">${item.precio}</span>
+                                 <span className="text-xs text-gray-500">x{item.quantity}</span>
+                               </div>
+                             </li>
+                             
                             ))}
                         </ul>
+                        {backupCart.length > 0 && (
+                            <div className="border-t mt-4 pt-4 text-right font-bold text-lg text-red-700">
+                                Total Intentado: ${backupCart.reduce((sum, item) => sum + (item.precio * item.quantity), 0).toFixed(2)}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -151,7 +170,7 @@ const FailurePage = () => {
                         Volver a la tienda
                     </button>
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 };

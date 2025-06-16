@@ -159,22 +159,85 @@ export default async function handler(req, res) {
         console.log('📧 Email usuario:', email_usuario);
         console.log('📫 Datos de envío:', datos_envio);
 
-        if (['approved', 'pending', 'in_process'].includes(payment.status)) {
+        if (payment.status === 'approved') {
             await procesarOrden({
                 items,
-                estado_pago: payment.status,
+                estado_pago: payment.status, // Should be 'approved'
                 email_usuario,
                 email_cliente,
                 datos_envio,
+                // Ensure all necessary parameters for procesarOrden are passed (already included in datos_envio or directly)
             });
-            console.log('✅ Orden procesada y stock actualizado desde webhook.');
+            console.log('✅ Orden APROBADA procesada y stock actualizado desde webhook.'); // Log message updated for clarity
+        } else if (['pending', 'in_process'].includes(payment.status)) {
+            console.log(`⏳ Pago con estado '${payment.status}'. No se actualiza stock ni se guarda orden principal por ahora via webhook.`);
+            
+            const { data: existingOrder, error: queryError } = await supabase
+                .from('ordenes')
+                .select('id, estado_pago, external_reference')
+                .eq('external_reference', externalReference)
+                .maybeSingle();
+
+            if (queryError) {
+                console.warn(`[webhook] ⚠️ Error al buscar orden existente (${externalReference}) para actualizar estado:`, queryError.message);
+            }
+
+            if (existingOrder && existingOrder.estado_pago !== payment.status) {
+                console.log(`[webhook] 🔁 Actualizando estado de orden existente (${externalReference}) de '${existingOrder.estado_pago}' a '${payment.status}' (sin afectar stock).`);
+                const { error: updateError } = await supabase
+                    .from('ordenes')
+                    .update({ estado_pago: payment.status, metodo_pago: payment.payment_method_id || existingOrder.metodo_pago }) // Also update payment method if available
+                    .eq('external_reference', externalReference); 
+
+                if (updateError) {
+                    console.error(`[webhook] ❌ Error al actualizar estado de orden PENDIENTE/IN_PROCESS (${externalReference}):`, updateError.message);
+                } else {
+                    console.log(`[webhook] ✅ Estado de orden PENDIENTE/IN_PROCESS (${externalReference}) actualizado correctamente a '${payment.status}'.`);
+                }
+            } else if (existingOrder && existingOrder.estado_pago === payment.status) {
+                console.log(`[webhook] ℹ️ Estado de orden (${externalReference}) ya es '${payment.status}'. No se requiere actualización.`);
+            } else if (!existingOrder) {
+                 console.log(`[webhook] ℹ️ No se encontró orden existente (${externalReference}) con estado PENDIENTE/IN_PROCESS. No se crea nueva orden aquí para evitar duplicados si process_payment ya la creó.`);
+                // If the order doesn't exist, we are not creating it here for pending/in_process,
+                // as per the primary goal of not processing the order (which includes stock) yet.
+                // The /api/process_payment or /api/process-transfer might have already created an initial record.
+            } else {
+                console.log(`[webhook] ℹ️ No se requiere acción para la orden (${externalReference}) con estado '${payment.status}'.`);
+            }
         } else {
-            console.log(`ℹ️ Pago rechazado (${payment.status}). No se guarda orden.`);
+            console.log(`ℹ️ Pago con estado '${payment.status}' (e.g., rejected, cancelled). No se guarda orden ni se actualiza stock.`);
+            // Consider updating order status to 'rejected' or 'cancelled' if it exists
+            const { data: existingOrderToReject, error: queryErrorReject } = await supabase
+                .from('ordenes')
+                .select('id, estado_pago')
+                .eq('external_reference', externalReference)
+                .maybeSingle();
+
+            if (queryErrorReject) {
+                console.warn(`[webhook] ⚠️ Error al buscar orden existente (${externalReference}) para actualizar a estado RECHAZADO/CANCELADO:`, queryErrorReject.message);
+            }
+
+            if (existingOrderToReject && existingOrderToReject.estado_pago !== payment.status && existingOrderToReject.estado_pago !== 'approved') { // Don't overwrite approved
+                console.log(`[webhook] 🔁 Actualizando estado de orden existente (${externalReference}) de '${existingOrderToReject.estado_pago}' a '${payment.status}' (RECHAZADO/CANCELADO).`);
+                const { error: updateErrorReject } = await supabase
+                    .from('ordenes')
+                    .update({ estado_pago: payment.status, metodo_pago: payment.payment_method_id || existingOrderToReject.metodo_pago })
+                    .eq('external_reference', externalReference);
+
+                if (updateErrorReject) {
+                    console.error(`[webhook] ❌ Error al actualizar estado de orden RECHAZADO/CANCELADO (${externalReference}):`, updateErrorReject.message);
+                } else {
+                    console.log(`[webhook] ✅ Estado de orden RECHAZADO/CANCELADO (${externalReference}) actualizado correctamente a '${payment.status}'.`);
+                }
+            } else if (existingOrderToReject && existingOrderToReject.estado_pago === payment.status) {
+                 console.log(`[webhook] ℹ️ Estado de orden (${externalReference}) ya es '${payment.status}'. No se requiere actualización.`);
+            } else if (existingOrderToReject && existingOrderToReject.estado_pago === 'approved') {
+                console.log(`[webhook] ⚠️ Orden (${externalReference}) ya está APROBADA. No se cambiará a '${payment.status}'. Contactar soporte si es inesperado.`);
+            }
         }
           
-          
-
-        console.log('✅ Orden procesada y stock actualizado desde webhook.');
+        // The general "Orden procesada y stock actualizado desde webhook." log was removed as it's now conditional.
+        // Specific logs are inside each condition.
 
         const channelName = `order_status_${externalReference}`;
 

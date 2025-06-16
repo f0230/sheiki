@@ -13,6 +13,7 @@ export const MONTO_TOTAL_KEY = 'monto_total';
 export const USER_EMAIL_KEY = 'user_email';
 export const STATUS_DETAIL_KEY = 'status_detail'; // New
 export const PAYMENT_METHOD_ID_KEY_LS = 'payment_method_id_ls'; // New
+export const TIPO_PAGO_KEY = 'tipo_pago'; // New
 
 // Payment Method IDs
 export const ABITAB_PM = 'abitab';

@@ -36,7 +36,8 @@ const PagoMercadoPago = ({
     setPaymentProcessing,
     finalizeCheckout,
     setToastMessage,  // ✅
-    setToastVisible   // ✅
+    setToastVisible,   // ✅
+    handleEditShippingData // New prop
 }) => {
 
     // Helper Functions
@@ -103,6 +104,10 @@ const PagoMercadoPago = ({
                 setToastVisible?.(true);
                 setPaymentProcessing(false);
                 setTimeout(() => setToastVisible?.(false), 5000);
+                // ADD THE CALL TO THE NEW HANDLER HERE:
+                if (validationError === 'La cédula es obligatoria para pagos en efectivo.') {
+                    handleEditShippingData(); // Call the function to reset the form
+                }
                 return;
             }
 

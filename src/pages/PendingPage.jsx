@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, FileText, ShoppingBag } from 'lucide-react'; // Icons
+import { Clock, FileText, ShoppingBag, MessageSquare } from 'lucide-react'; // Icons
+import { motion } from 'framer-motion';
 import {
     BACKUP_CART_KEY,
     BACKUP_ENVIO_KEY,
     EXTERNAL_REFERENCE_KEY,
-    TICKET_URL_KEY
+    TICKET_URL_KEY,
+    TIPO_PAGO_KEY
 } from '../lib/constants';
 import { useCart } from '../store/useCart';
 
@@ -17,12 +19,15 @@ const PendingPage = () => {
     const [backupCart, setBackupCart] = useState([]);
     const [backupEnvio, setBackupEnvio] = useState(null);
     const [externalRef, setExternalRef] = useState('');
+    const [paymentType, setPaymentType] = useState('');
 
     useEffect(() => {
         setTicketUrl(localStorage.getItem(TICKET_URL_KEY) || '');
         setBackupCart(JSON.parse(localStorage.getItem(BACKUP_CART_KEY)) || []);
         setBackupEnvio(JSON.parse(localStorage.getItem(BACKUP_ENVIO_KEY)) || null);
         setExternalRef(localStorage.getItem(EXTERNAL_REFERENCE_KEY) || '');
+        // Retrieve payment type using the constant
+        setPaymentType(localStorage.getItem(TIPO_PAGO_KEY) || '');
 
         // clearCart(); // Optional: Clears the main cart, not the backup for this page.
         // Decided to keep the active cart for now, user might go back.
@@ -31,7 +36,12 @@ const PendingPage = () => {
 
     return (
         <div className="min-h-screen bg-amber-50 flex flex-col items-center justify-center p-4 text-center">
-            <div className="w-full max-w-2xl bg-white rounded-xl shadow-xl p-6 sm:p-8 space-y-6">
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="w-full max-w-2xl bg-white rounded-xl shadow-xl p-6 sm:p-8 space-y-6"
+            >
                 <div className="flex flex-col items-center">
                     <Clock className="w-16 h-16 text-amber-500 mb-4" />
                     <h2 className="text-2xl sm:text-3xl font-bold text-amber-800">Estamos esperando tu pago</h2>
@@ -40,21 +50,38 @@ const PendingPage = () => {
                     </p>
                 </div>
 
-                {ticketUrl && (
-                    <div className="mt-6 text-center">
+                {paymentType === 'manual_transfer' ? (
+                    <div className="mt-6 text-center p-4 border border-amber-300 rounded-lg bg-amber-50">
+                        <p className="text-md text-amber-800 mb-4">
+                            Tu pago será procesado manualmente. Puedes enviarnos un comprobante o referencia vía WhatsApp y te enviaremos un email de confirmación una vez recibido.
+                        </p>
                         <a
-                            href={ticketUrl}
+                            href="https://wa.me/59800000000" // Placeholder WhatsApp number
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg shadow-md hover:shadow-lg transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                            className="inline-flex items-center justify-center bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-bold py-3 px-6 rounded-lg text-md shadow-md hover:shadow-lg transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
                         >
-                            <FileText className="w-5 h-5 mr-2" />
-                            Ver Instrucciones / Pagar
+                            <MessageSquare className="w-5 h-5 mr-2" />
+                            Contactar por WhatsApp
                         </a>
-                        <p className="text-xs text-gray-500 mt-2">
-                            (Se abrirá en una nueva pestaña)
-                        </p>
                     </div>
+                ) : (
+                    ticketUrl && (
+                        <div className="mt-6 text-center">
+                            <a
+                                href={ticketUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg shadow-md hover:shadow-lg transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                            >
+                                <FileText className="w-5 h-5 mr-2" />
+                                Ver Instrucciones / Pagar
+                            </a>
+                            <p className="text-xs text-gray-500 mt-2">
+                                (Se abrirá en una nueva pestaña)
+                            </p>
+                        </div>
+                    )
                 )}
 
                 {externalRef && (
@@ -116,7 +143,7 @@ const PendingPage = () => {
                         Volver a la tienda
                     </button>
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 };

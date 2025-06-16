@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useCart } from '../store/useCart';
 import { CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
     BACKUP_CART_KEY,
     BACKUP_ENVIO_KEY,
@@ -61,16 +62,16 @@ const SuccessPage = () => {
 
         // 🧹 Limpieza
         clearCart(); // Clears current cart from Zustand store
-        
+
         setTimeout(() => {
             localStorage.removeItem(BACKUP_CART_KEY);
             localStorage.removeItem(BACKUP_ENVIO_KEY);
-            localStorage.removeItem(MONTO_TOTAL_KEY); 
-            localStorage.removeItem(USER_EMAIL_KEY);  
-            localStorage.removeItem(PAYMENT_ID_KEY); 
-            localStorage.removeItem(TICKET_URL_KEY); 
-            localStorage.removeItem(STATUS_DETAIL_KEY); 
-            localStorage.removeItem(PAYMENT_METHOD_ID_KEY_LS); 
+            localStorage.removeItem(MONTO_TOTAL_KEY);
+            localStorage.removeItem(USER_EMAIL_KEY);
+            localStorage.removeItem(PAYMENT_ID_KEY);
+            localStorage.removeItem(TICKET_URL_KEY);
+            localStorage.removeItem(STATUS_DETAIL_KEY);
+            localStorage.removeItem(PAYMENT_METHOD_ID_KEY_LS);
             // EXTERNAL_REFERENCE_KEY is cleaned by useFinalizarCheckout if ORDER_ID_KEY was used,
             // or it's the same as ORDER_ID_KEY if that was the source.
             // ORDER_ID_KEY itself is also cleared by useFinalizarCheckout.
@@ -94,7 +95,12 @@ const SuccessPage = () => {
                 )}
             </div>
 
-            <div className="w-full max-w-2xl bg-white rounded-xl shadow-xl p-6 space-y-6"> {/* Wider card, more padding, shadow-xl */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="w-full max-w-2xl bg-white rounded-xl shadow-xl p-6 space-y-6"
+            > {/* Wider card, more padding, shadow-xl */}
                 {backupCart.length > 0 && (
                     <div>
                         <h3 className="font-semibold text-lg mb-3 text-gray-800 border-b pb-2">Resumen de tu compra:</h3>
@@ -147,8 +153,8 @@ const SuccessPage = () => {
                 >
                     Volver a la tienda
                 </button>
-            </div>
-        </div> 
+            </motion.div>
+        </div>
     );
 };
 
