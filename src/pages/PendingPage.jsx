@@ -103,7 +103,7 @@ const PendingPage = () => {
                 <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
                     <h2 className="text-2xl font-bold mb-4 text-yellow-800">⏳ Esperando confirmación</h2>
                     <p className="mb-4 text-gray-700">
-                        Aguardamos respuesta de Mercado Pago. Si pagaste con efectivo, revisá tu email para el ticket.
+                        Tu orden fue recivida. Revisá tu email para el ticket.
                     </p>
                     <button
                         onClick={() => navigate('/')}

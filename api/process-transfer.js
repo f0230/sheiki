@@ -70,6 +70,38 @@ export default async function handler(req, res) {
 
         const { error } = await supabase.from('ordenes').insert([orden]);
 
+        // 🧮 Descontar stock por cada item
+        for (const item of items_comprados) {
+            const { id, color, talle, quantity } = item;
+
+            const { data: variante, error: fetchError } = await supabase
+                .from('variantes')
+                .select('stock')
+                .eq('producto_id', id)
+                .eq('color', color)
+                .eq('talle', talle)
+                .single();
+
+            if (fetchError || !variante) {
+                console.error('⚠️ Variante no encontrada para descontar stock:', { id, color, talle });
+                continue;
+            }
+
+            const nuevoStock = Math.max(0, variante.stock - quantity);
+
+            const { error: updateError } = await supabase
+                .from('variantes')
+                .update({ stock: nuevoStock })
+                .eq('producto_id', id)
+                .eq('color', color)
+                .eq('talle', talle);
+
+            if (updateError) {
+                console.error('❌ Error al descontar stock:', updateError);
+            }
+        }
+
+
         if (error) {
             console.error('❌ Error al insertar orden:', error);
             return res.status(500).json({ message: 'Error al guardar la orden', details: error.message });

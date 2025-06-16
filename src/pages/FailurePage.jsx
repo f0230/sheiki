@@ -75,14 +75,7 @@ const FailurePage = () => {
 
     return (
         <div className="min-h-screen bg-red-50 flex flex-col items-center justify-center text-center p-4">
-            <div className="w-full max-w-xl mb-6">
-                <StatusScreen
-                    initialization={initialization}
-                    customization={customization}
-                    onReady={onReady}
-                    onError={onError}
-                />
-            </div>
+        
 
             <div className="bg-white border border-red-300 shadow-md rounded-xl max-w-xl w-full p-6 text-left mb-4">
                 <div className="flex items-center gap-3 text-red-600">
@@ -106,6 +99,15 @@ const FailurePage = () => {
                 >
                     📱 ¿Necesitás ayuda? Escribinos por WhatsApp
                 </a>
+            </div>
+
+            <div className="w-full max-w-xl mb-6">
+                <StatusScreen
+                    initialization={initialization}
+                    customization={customization}
+                    onReady={onReady}
+                    onError={onError}
+                />
             </div>
 
             {metodoPago !== 'ticket' && (
